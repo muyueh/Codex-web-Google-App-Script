@@ -31,13 +31,15 @@ Existing Apps Script projects under `apps-script/`:
 - `apps-script/gas-main-app/`
   - Contains `.clasp.json`, `appsscript.json`, and `Code.js` / `Code.gs` etc.
 - `apps-script/gas-second-app/`
-  - Contains `.clasp.json` and `README.md`  
+  - Contains `.clasp.json` and `README.md`
   - **Note:** `appsscript.json` is currently **missing** here; create one before pushing any code.
+- `apps-script/gas-cat-cafe/`
+  - Contains `.clasp.json`, `appsscript.json`, and `Code.gs` (Slides deck helper)
 
 The CI workflow `.github/workflows/deploy-gas.yml`:
 
 - Already exists
-- Already deploys both folders via a **matrix job** (`matrix.project`)
+- Already deploys all listed folders via a **matrix job** (`matrix.project`)
 - Runs `clasp push -f` once per project
 
 Mental pipeline:
@@ -84,9 +86,13 @@ Monorepo structure (example):
    │  ├─ .clasp.json
    │  ├─ appsscript.json
    │  └─ Code.gs / Code.js / *.gs / *.js / src/…
-   └─ gas-second-app/
+   ├─ gas-second-app/
+   │  ├─ .clasp.json
+   │  ├─ appsscript.json   # <-- must be created if missing
+   │  └─ Code.gs / Code.js / *.gs / *.js / src/…
+   └─ gas-cat-cafe/
       ├─ .clasp.json
-      ├─ appsscript.json   # <-- must be created if missing
+      ├─ appsscript.json
       └─ Code.gs / Code.js / *.gs / *.js / src/…
 ```
 
@@ -274,10 +280,10 @@ List all project folders:
 find apps-script -mindepth 1 -maxdepth 1 -type d | sort
 ```
 
-For each folder (e.g. `apps-script/gas-main-app`, `apps-script/gas-second-app`):
+For each folder (e.g. `apps-script/gas-main-app`, `apps-script/gas-second-app`, `apps-script/gas-cat-cafe`):
 
 ```bash
-PROJECT_DIR="apps-script/gas-main-app"   # or gas-second-app
+PROJECT_DIR="apps-script/gas-main-app"   # or gas-second-app / gas-cat-cafe
 ls "$PROJECT_DIR"
 cat "$PROJECT_DIR/.clasp.json"
 ```
@@ -315,7 +321,7 @@ Then follow the relevant **Flow**:
 
 ## 7. Flow 1 – Use an existing project folder
 
-This is for `apps-script/gas-main-app`, `apps-script/gas-second-app`, or any other existing folder.
+This is for `apps-script/gas-main-app`, `apps-script/gas-second-app`, `apps-script/gas-cat-cafe`, or any other existing folder.
 
 1. List projects:
 
@@ -451,6 +457,7 @@ Expected behavior:
 
      * `apps-script/gas-main-app`
      * `apps-script/gas-second-app`
+     * `apps-script/gas-cat-cafe`
    * Steps:
 
      * Checkout repo (`actions/checkout@v4`)
@@ -481,6 +488,7 @@ jobs:
         project:
           - apps-script/gas-main-app
           - apps-script/gas-second-app
+          - apps-script/gas-cat-cafe
 
     steps:
       - name: Checkout repo
@@ -571,7 +579,7 @@ Once all of the above are true, any push to `main` (or manual workflow run) will
 
 When making changes:
 
-1. Align with the user on which project(s) to modify (e.g. `gas-main-app` vs `gas-second-app`).
+1. Align with the user on which project(s) to modify (e.g. `gas-main-app` vs `gas-second-app` vs `gas-cat-cafe`).
 
 2. Make code / manifest changes **only** inside the corresponding folder.
 
@@ -584,7 +592,7 @@ When making changes:
    git diff
    ```
 
-5. Commit with a clear message (e.g. `feat: add trigger to gas-second-app`) and push.
+5. Commit with a clear message (e.g. `feat: add trigger to gas-cat-cafe`) and push.
 
 6. If requested, open a PR or post the diff in the conversation.
 
