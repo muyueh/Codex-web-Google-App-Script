@@ -1,4 +1,4 @@
-name: Deploy Taipei 500 Form
+name: Deploy Google Apps Script (single repo)
 
 on:
   push:
@@ -8,9 +8,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      PROJECT_PATH: taipei-500-form
-      DEPLOY_SECRETS_AVAILABLE: 'false'
 
     steps:
       - name: Checkout repo
@@ -23,69 +20,16 @@ jobs:
 
       - name: Install clasp (3.x)
         run: npm install -g @google/clasp@^3.1.0
-      - name: Check deploy secrets
-        id: deploy-secrets
-        env:
-          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
-          TAIPEI_500_FORM_SCRIPT_ID: ${{ secrets.TAIPEI_500_FORM_SCRIPT_ID }}
-        run: |
-          missing=()
-
-          if [[ -z "$CLASPRC_JSON" ]]; then
-            missing+=("CLASPRC_JSON")
-          fi
-
-          if [[ -z "$TAIPEI_500_FORM_SCRIPT_ID" ]]; then
-            missing+=("TAIPEI_500_FORM_SCRIPT_ID")
-          fi
-
-          if [[ ${#missing[@]} -eq 0 ]]; then
-            echo "Deploy secrets detected"
-            echo "DEPLOY_SECRETS_AVAILABLE=true" >> "$GITHUB_ENV"
-            exit 0
-          fi
-
-          printf '::warning::Skipping deploy because the following secrets are unavailable: %s\n' "${missing[*]}"
-          echo "DEPLOY_SECRETS_AVAILABLE=false" >> "$GITHUB_ENV"
-
-      - name: Short-circuit when secrets are missing
-        if: env.DEPLOY_SECRETS_AVAILABLE != 'true'
-        run: |
-          echo "Secrets not available in this context. Remaining steps will be skipped."
-
-      - name: Inject scriptId into clasp config
-        if: env.DEPLOY_SECRETS_AVAILABLE == 'true'
-        working-directory: ${{ env.PROJECT_PATH }}
-        env:
-          TAIPEI_500_FORM_SCRIPT_ID: ${{ secrets.TAIPEI_500_FORM_SCRIPT_ID }}
-        run: |
-          if [[ -z "$TAIPEI_500_FORM_SCRIPT_ID" ]]; then
-            echo "::error::TAIPEI_500_FORM_SCRIPT_ID secret must be configured." >&2
-            exit 1
-          fi
-          CLASP_SCRIPT_ID="$TAIPEI_500_FORM_SCRIPT_ID" npm run set:script-id -- --path .
 
       - name: Restore clasp credentials from secret
-        if: env.DEPLOY_SECRETS_AVAILABLE == 'true'
         run: |
           mkdir -p ~
-          cat <<'JSON' > ~/.clasprc.json
+          cat << 'JSON' > ~/.clasprc.json
           ${{ secrets.CLASPRC_JSON }}
           JSON
-          chmod 600 ~/.clasprc.json
 
       - name: Check clasp login status
-        if: env.DEPLOY_SECRETS_AVAILABLE == 'true'
-        shell: bash
-        run: |
-          if clasp login --status; then
-            echo "clasp credentials restored successfully"
-          else
-            echo "::error::Unable to validate clasp authentication. Ensure the CLASPRC_JSON secret is valid." >&2
-            exit 1
-          fi
+        run: clasp login --status
 
-      - name: Deploy
-        if: env.DEPLOY_SECRETS_AVAILABLE == 'true'
-        working-directory: ${{ env.PROJECT_PATH }}
+      - name: Deploy Apps Script project
         run: clasp push -f
