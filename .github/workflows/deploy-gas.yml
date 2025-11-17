@@ -12,7 +12,8 @@ jobs:
     strategy:
       matrix:
         project:
-          - apps-script/taipei-500-form
+          - path: apps-script/taipei-500-form
+            scriptIdSecret: TAIPEI_500_FORM_SCRIPT_ID
 
     steps:
       - name: Checkout repo
@@ -44,6 +45,19 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy ${{ matrix.project }}
-        working-directory: ${{ matrix.project }}
+      - name: Inject scriptId for ${{ matrix.project.path }}
+        working-directory: ${{ matrix.project.path }}
+        env:
+          SCRIPT_ID: ${{ secrets[matrix.project.scriptIdSecret] }}
+        run: |
+          if [[ -z "$SCRIPT_ID" ]]; then
+            echo "::error::Missing ${{ matrix.project.scriptIdSecret }} secret."
+            exit 1
+          fi
+          tmp_file="$(mktemp)"
+          jq --arg scriptId "$SCRIPT_ID" '.scriptId = $scriptId' .clasp.json > "$tmp_file"
+          mv "$tmp_file" .clasp.json
+
+      - name: Deploy ${{ matrix.project.path }}
+        working-directory: ${{ matrix.project.path }}
         run: clasp push -f
