@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PROJECT_PATH: taipei-500-form
-      SCRIPT_ID_SECRET: TAIPEI_500_FORM_SCRIPT_ID
       DEPLOY_SECRETS_AVAILABLE: 'false'
 
     steps:
@@ -28,16 +27,11 @@ jobs:
         id: deploy-secrets
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
-          SCRIPT_ID: ${{ secrets[env.SCRIPT_ID_SECRET] }}
         run: |
           missing=()
 
           if [[ -z "$CLASPRC_JSON" ]]; then
             missing+=("CLASPRC_JSON")
-          fi
-
-          if [[ -z "$SCRIPT_ID" ]]; then
-            missing+=("${{ env.SCRIPT_ID_SECRET }}")
           fi
 
           if [[ ${#missing[@]} -eq 0 ]]; then
@@ -73,20 +67,6 @@ jobs:
             echo "::error::Unable to validate clasp authentication. Ensure the CLASPRC_JSON secret is valid." >&2
             exit 1
           fi
-
-      - name: Inject scriptId
-        if: env.DEPLOY_SECRETS_AVAILABLE == 'true'
-        working-directory: ${{ env.PROJECT_PATH }}
-        env:
-          SCRIPT_ID: ${{ secrets[env.SCRIPT_ID_SECRET] }}
-        run: |
-          if [[ -z "$SCRIPT_ID" ]]; then
-            echo "::error::Missing ${{ env.SCRIPT_ID_SECRET }} secret."
-            exit 1
-          fi
-          tmp_file="$(mktemp)"
-          jq --arg scriptId "$SCRIPT_ID" '.scriptId = $scriptId' .clasp.json > "$tmp_file"
-          mv "$tmp_file" .clasp.json
 
       - name: Deploy
         if: env.DEPLOY_SECRETS_AVAILABLE == 'true'
