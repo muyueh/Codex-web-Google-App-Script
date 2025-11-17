@@ -1,4 +1,4 @@
-# Single repo Google Apps Script starter
+# Multi-app Google Apps Script starter
 
 ```mermaid
 gitGraph
@@ -10,126 +10,86 @@ gitGraph
   commit id: "hello-world-gas" tag: "work@HEAD"
 ```
 
-```mermaid
-stateDiagram-v2
-    state "Git repo (.clasp.json + GAS sources)" as Repo
-    state "Developer workstation" as Dev
-    state "GitHub Actions" as GHA
-    state "Secrets: CLASPRC_JSON" as ClaspSecret
-    state "Apps Script runtime" as GAS
-    state "Logger output" as Logs
-
-    Dev --> Repo: edit Code.js + manifest
-    Repo --> GHA: push to main
-    GHA --> ClaspSecret: restore ~/.clasprc.json
-    GHA --> GAS: clasp push -f
-    GAS --> Logs: helloWorld() message
-    Logs --> Dev: review execution log
-```
-
-```mermaid
-sequenceDiagram
-    participant Dev as Developer
-    participant Repo as Git Repo
-    participant CI as Deploy Workflow
-    participant Secret as CLASPRC_JSON
-    participant GAS as Google Apps Script
-
-    Dev->>Repo: Update Code.js / manifest
-    Dev->>Repo: Commit + push main
-    Repo-->>CI: Trigger workflow
-    CI->>Secret: Restore ~/.clasprc.json
-    CI->>CI: npm install -g @google/clasp
-    CI->>GAS: clasp login --status
-    CI->>GAS: clasp push -f
-    GAS-->>CI: Deployment log
-    CI-->>Dev: Workflow summary
-```
-
-```mermaid
-flowchart LR
-    Dev[Developer]
-    Repo[Git Repo]
-    Workflow[deploy-gas.yml]
-    Secrets[CLASPRC_JSON secret]
-    GAS[Apps Script project]
-    Logger[Apps Script Logger]
-
-    Dev -->|clasp / npm| Repo
-    Repo -->|push main| Workflow
-    Workflow -->|reads| Secrets
-    Workflow -->|clasp push -f| GAS
-    GAS -->|helloWorld logs| Logger -->|view| Dev
-```
-
-```mermaid
-flowchart TB
-    subgraph UserLane[User]
-        U[Developer]
-    end
-    subgraph FrontendLane[Frontend]
-        Editor[Apps Script Editor]
-    end
-    subgraph BackendLane[Backend]
-        RepoSvc[GitHub Repo]
-        Workflow[GitHub Actions]
-        Secret[CLASPRC_JSON]
-        Runtime[Apps Script Runtime]
-    end
-
-    U -->|writes code| Editor
-    U -->|git push| RepoSvc
-    RepoSvc -->|trigger| Workflow
-    Workflow -->|needs creds| Secret
-    Workflow -->|clasp push| Runtime
-    Runtime -->|sync back| Editor
-```
-
 ## Overview
 
-This repository now hosts a single Google Apps Script project at the root so it can be deployed directly with `clasp` and GitHub Actions. The code exposes a minimal `helloWorld` function that writes a message to the execution log and a `createTaipeiCoffeeShopSlides` helper that builds a multi-slide Google Slides tour of Taipei coffee shops while logging the generated deck URL.
+The repository now accommodates multiple `clasp`-driven Google Apps Script
+projects. Each project lives under `apps-script/<app-name>/` with its own
+`.clasp.json`, manifest, and source files while keeping `"rootDir": "."` so the
+folder contents map directly to Apps Script.
+
+A top-level optional `shared/` directory is also available for reusable snippets
+or documentation that developers want to copy into either project.
 
 ## Repository layout
 
 ```text
 .
-├─ .clasp.json          # Points clasp at your standalone Apps Script project
-├─ appsscript.json      # Minimal manifest (V8 runtime, Asia/Taipei)
-├─ Code.js              # helloWorld() implementation
-├─ package.json         # Optional tooling definition
+├─ apps-script/
+│  ├─ gas-main-app/          # Existing helloWorld + Slides helper source
+│  │  ├─ .clasp.json         # Points clasp at scriptId 105Da...
+│  │  ├─ appsscript.json     # Manifest (V8 runtime, Asia/Taipei)
+│  │  └─ Code.js             # helloWorld + createTaipeiCoffeeShopSlides
+│  └─ gas-second-app/        # Placeholder for scriptId 1s-wTbfE...
+│     ├─ .clasp.json         # Already configured with rootDir "."
+│     └─ README.md           # Notes about cloning/pulling the remote code
+├─ shared/                   # Optional reusable snippets or docs
+│  └─ README.md
+├─ package.json              # Contains the `deploy` npm script
+├─ package-lock.json
+├─ node_modules/
 └─ .github/workflows/
-   └─ deploy-gas.yml    # Push to GAS on main
+   └─ deploy-gas.yml         # Pushes the currently scoped .clasp project
 ```
 
-## Getting started locally
+## Working with the main Apps Script project
 
 1. Install dependencies once: `npm install`.
-2. Replace `YOUR_SCRIPT_ID_HERE` in `.clasp.json` with your project ID (Apps Script editor → **Project settings → Script ID**).
-3. Run `npx clasp login --no-localhost` to create `~/.clasprc.json` locally.
-4. Deploy from the repo root with `npm run deploy` (runs `clasp push -f`).
+2. Authenticate `clasp` locally (`npx clasp login --no-localhost`).
+3. From `apps-script/gas-main-app/`, deploy changes with `npx clasp push -f` or
+   from the repo root via `npm run deploy` (uses the default `.clasp.json` in the
+   working directory).
+4. Update `Code.js` / `appsscript.json` inside the folder. The manifest already
+   enables the V8 runtime and sets the Asia/Taipei time zone.
+
+## Setting up the second Apps Script project
+
+The folder `apps-script/gas-second-app/` is prepared for script ID
+`1s-wTbfES7k69y0xn8dtTRkXVyv-8Vl6lm2GS8GX363WPW_gmwl6RAc09`. Because Google
+authentication is required, run the clone locally once you have credentials:
+
+```bash
+cd apps-script/gas-second-app
+npx clasp clone 1s-wTbfES7k69y0xn8dtTRkXVyv-8Vl6lm2GS8GX363WPW_gmwl6RAc09 --rootDir .
+```
+
+This will download the remote manifest and sources directly into the folder
+alongside the already-checked-in `.clasp.json`.
+
+## Using the shared snippets directory
+
+Add utility scripts or documentation inside `shared/`. These files are not wired
+into either Apps Script project automatically—they serve as a scratch space for
+copy/paste friendly utilities.
 
 ## Continuous deployment via GitHub Actions
 
-The workflow in `.github/workflows/deploy-gas.yml` deploys on pushes to `main` and manual triggers. It:
-
-1. Checks out the repo.
-2. Installs Node.js 20 and `@google/clasp@^3.1.0` globally.
-3. Restores the `~/.clasprc.json` credentials from the `CLASPRC_JSON` secret.
-4. Validates the login with `clasp login --status`.
-5. Runs `clasp push -f` to publish the Apps Script project referenced by `.clasp.json`.
+The workflow in `.github/workflows/deploy-gas.yml` still deploys on pushes to
+`main`. Ensure the working directory for the job is set to whichever project you
+intend to publish (default is the repository root, so you can run the workflow
+from within `apps-script/gas-main-app/` by adding a `working-directory` override
+or by temporarily copying the appropriate `.clasp.json` into the job).
 
 ### Required GitHub secret
 
 | Secret name      | Purpose |
 | ---------------- | ------- |
-| `CLASPRC_JSON`   | Contents of the local `~/.clasprc.json` generated by `clasp login --no-localhost`; the workflow writes this file so it can authenticate before pushing. |
+| `CLASPRC_JSON`   | Contents of the local `~/.clasprc.json` generated by `clasp login --no-localhost`; the workflow writes this
+ file so it can authenticate before pushing. |
 
 ## Useful commands
 
 | Command | Description |
 | ------- | ----------- |
 | `npm install` | Installs `@google/clasp` locally so you can run it via `npx` or scripts. |
-| `npm run deploy` | Runs `clasp push -f` using the repo’s `.clasp.json`. |
+| `npm run deploy` | Runs `clasp push -f` using the repo’s `.clasp.json`. Execute from within the target Apps Script folder. |
 | `npx clasp logs --json` | View execution logs after calling `helloWorld` from the Apps Script editor. |
-
-With these files in place you can connect this repo to any standalone Apps Script project, edit `Code.js`, and rely on GitHub Actions to keep the remote script in sync.
