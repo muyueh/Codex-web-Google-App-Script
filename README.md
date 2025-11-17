@@ -1,95 +1,65 @@
-# Multi-app Google Apps Script starter
+# Google Apps Script Monorepo – Structure & Rules
 
-```mermaid
-gitGraph
-  commit id: "initial-commit"
-  branch work
-  checkout work
-  commit id: "merge-pr-13"
-  commit id: "single-repo-reset"
-  commit id: "hello-world-gas" tag: "work@HEAD"
+This repository hosts multiple Google Apps Script projects managed through [`@google/clasp`](https://github.com/google/clasp) and deployed via GitHub Actions. Every project lives under `apps-script/` and keeps its own manifest, source files, and `.clasp.json` so the folder can be pushed independently.
+
+## Directory layout
+
 ```
-
-## Overview
-
-The repository now accommodates multiple `clasp`-driven Google Apps Script
-projects. Each project lives under `apps-script/<app-name>/` with its own
-`.clasp.json`, manifest, and source files while keeping `"rootDir": "."` so the
-folder contents map directly to Apps Script.
-
-A top-level optional `shared/` directory is also available for reusable snippets
-or documentation that developers want to copy into either project.
-
-## Repository layout
-
-```text
 .
 ├─ apps-script/
-│  ├─ gas-main-app/          # Existing helloWorld + Slides helper source
-│  │  ├─ .clasp.json         # Points clasp at scriptId 105Da...
-│  │  ├─ appsscript.json     # Manifest (V8 runtime, Asia/Taipei)
-│  │  └─ Code.js             # helloWorld + createTaipeiCoffeeShopSlides
-│  └─ gas-second-app/        # Placeholder for scriptId 1s-wTbfE...
-│     ├─ .clasp.json         # Already configured with rootDir "."
-│     └─ README.md           # Notes about cloning/pulling the remote code
-├─ shared/                   # Optional reusable snippets or docs
-│  └─ README.md
-├─ package.json              # Contains the `deploy` npm script
+│  ├─ gas-main-app/      # Script ID linked in .clasp.json (helloWorld + Slides helper)
+│  └─ gas-second-app/    # Script ID linked in .clasp.json (manifest TBD)
+├─ shared/               # Optional shared snippets, docs, or templates
+├─ package.json          # Contains workspace-level scripts (e.g., deploy)
 ├─ package-lock.json
 ├─ node_modules/
 └─ .github/workflows/
-   └─ deploy-gas.yml         # Pushes the currently scoped .clasp project
+   └─ deploy-gas.yml     # Matrix-driven clasp push for each Apps Script project
 ```
 
-## Working with the main Apps Script project
+Each `apps-script/gas-<slug>/` directory is a self-contained Apps Script workspace whose contents map directly to the Apps Script editor because `"rootDir": "."` in the `.clasp.json` files.
 
-1. Install dependencies once: `npm install`.
-2. Authenticate `clasp` locally (`npx clasp login --no-localhost`).
-3. From `apps-script/gas-main-app/`, deploy changes with `npx clasp push -f` or
-   from the repo root via `npm run deploy` (uses the default `.clasp.json` in the
-   working directory).
-4. Update `Code.js` / `appsscript.json` inside the folder. The manifest already
-   enables the V8 runtime and sets the Asia/Taipei time zone.
+## Naming conventions
 
-## Setting up the second Apps Script project
+* Project folders follow `apps-script/gas-<slug>/` (e.g., `gas-main-app`, `gas-second-app`).
+* `.clasp.json` files always live inside the project folder and keep `"rootDir": "."`.
+* Source files use `.gs`/`.js` extensions (Apps Script accepts both) and sit alongside the manifest.
+* Shared utilities that are not automatically deployed belong in `shared/`.
 
-The folder `apps-script/gas-second-app/` is prepared for script ID
-`1s-wTbfES7k69y0xn8dtTRkXVyv-8Vl6lm2GS8GX363WPW_gmwl6RAc09`. Because Google
-authentication is required, run the clone locally once you have credentials:
+## Per-project requirements
 
-```bash
-cd apps-script/gas-second-app
-npx clasp clone 1s-wTbfES7k69y0xn8dtTRkXVyv-8Vl6lm2GS8GX363WPW_gmwl6RAc09 --rootDir .
-```
+Every project directory (currently `gas-main-app` and `gas-second-app`) must contain:
 
-This will download the remote manifest and sources directly into the folder
-alongside the already-checked-in `.clasp.json`.
+1. `.clasp.json` with the correct `scriptId` and `rootDir` set to `"."`.
+2. `appsscript.json` manifest configured for the runtime, time zone, and enabled services required by that project.
+3. Source files (`Code.js`, `.gs` modules, or subdirectories) that match what you expect to appear in Apps Script.
+4. Inclusion in the CI matrix located in `.github/workflows/deploy-gas.yml` so automated pushes cover all active folders.
 
-## Using the shared snippets directory
+## Shared code policy
 
-Add utility scripts or documentation inside `shared/`. These files are not wired
-into either Apps Script project automatically—they serve as a scratch space for
-copy/paste friendly utilities.
+The `shared/` directory is intentionally decoupled from deployments. Use it for reusable snippets, documentation, or templates that developers can copy into `gas-main-app`, `gas-second-app`, or future folders. Nothing inside `shared/` is imported automatically—copy/paste or manual syncing is required when sharing logic.
 
-## Continuous deployment via GitHub Actions
+## CI/CD behavior
 
-The workflow in `.github/workflows/deploy-gas.yml` still deploys on pushes to
-`main`. Ensure the working directory for the job is set to whichever project you
-intend to publish (default is the repository root, so you can run the workflow
-from within `apps-script/gas-main-app/` by adding a `working-directory` override
-or by temporarily copying the appropriate `.clasp.json` into the job).
+`.github/workflows/deploy-gas.yml` defines a single workflow (`Deploy Google Apps Script (matrix)`) that:
 
-### Required GitHub secret
+1. Runs on pushes to `main` and manual `workflow_dispatch` events.
+2. Sets up Node.js 20 and installs `@google/clasp@^3.1.0`.
+3. Restores `~/.clasprc.json` from the `CLASPRC_JSON` GitHub secret.
+4. Iterates over `matrix.project`, currently `apps-script/gas-main-app` and `apps-script/gas-second-app`, running `clasp push -f` in each directory.
 
-| Secret name      | Purpose |
-| ---------------- | ------- |
-| `CLASPRC_JSON`   | Contents of the local `~/.clasprc.json` generated by `clasp login --no-localhost`; the workflow writes this
- file so it can authenticate before pushing. |
+Keep the trigger scope and job name intact unless the deployment workflow changes intentionally. When adding or removing project folders, update the matrix list so CI remains in sync with the monorepo contents.
 
-## Useful commands
+## Onboarding new projects
 
-| Command | Description |
-| ------- | ----------- |
-| `npm install` | Installs `@google/clasp` locally so you can run it via `npx` or scripts. |
-| `npm run deploy` | Runs `clasp push -f` using the repo’s `.clasp.json`. Execute from within the target Apps Script folder. |
-| `npx clasp logs --json` | View execution logs after calling `helloWorld` from the Apps Script editor. |
+Follow these steps to add another Apps Script project to the monorepo:
+
+1. **Gather inputs** – Obtain the project slug (`gas-<slug>`) and target Script ID.
+2. **Create the folder** – `mkdir apps-script/gas-new-app && cd apps-script/gas-new-app`.
+3. **Link with clasp** – Run `npx clasp clone <SCRIPT_ID> --rootDir .` (or create starter manifest/source files if starting from scratch).
+4. **Verify manifests** – Ensure `.clasp.json` has `"rootDir": "."` and the manifest (`appsscript.json`) reflects the desired settings.
+5. **Add code** – Place `.gs`/`.js` files within the folder and keep project-specific docs nearby.
+6. **Update CI** – Append the new folder path to the `matrix.project` list inside `.github/workflows/deploy-gas.yml`.
+7. **Commit & push** – Run `git status`, commit the new folder plus workflow update, and push so CI can deploy it automatically.
+
+With these conventions, `gas-main-app`, `gas-second-app`, and any future projects stay isolated yet deployable through a single workflow.
