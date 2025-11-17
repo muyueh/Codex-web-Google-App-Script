@@ -1,12 +1,9 @@
 {
-  "name": "taipei-500-form",
-  "private": true,
+  "name": "single-gas-repo",
   "version": "1.0.0",
-  "description": "Google Apps Script project for the Taipei 500 dishes nomination form.",
+  "private": true,
   "scripts": {
-    "lint": "eslint .",
-    "format": "prettier --write .",
-    "set:script-id": "node scripts/set-clasp-script-id.mjs"
+    "deploy": "clasp push -f"
   },
   "devDependencies": {
     "@google/clasp": "^3.1.0"
