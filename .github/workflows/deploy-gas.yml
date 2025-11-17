@@ -1,4 +1,4 @@
-name: Deploy Google Apps Script (taipei-500-form)
+name: Deploy Google Apps Script (monorepo)
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         project:
-          - path: taipei-500-form
+          - path: apps-script/taipei-500-form
             scriptIdSecret: TAIPEI_500_FORM_SCRIPT_ID
 
     steps:
