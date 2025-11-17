@@ -1,4 +1,4 @@
-name: Deploy Google Apps Script (single repo)
+name: Deploy Google Apps Script (single repo, auto-bootstrap)
 
 on:
   push:
@@ -9,9 +9,14 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write   # allow committing .clasp.json back
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # so we can push commits back
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -30,6 +35,34 @@ jobs:
 
       - name: Check clasp login status
         run: clasp login --status
+
+      # Create Apps Script project if we don't have a real scriptId yet
+      - name: Ensure Apps Script project exists
+        run: |
+          if [ ! -f .clasp.json ] || grep -q "YOUR_SCRIPT_ID_HERE" .clasp.json; then
+            echo "No real scriptId yet – creating a new Apps Script project with clasp..."
+            # Change title/type if you want
+            clasp create --title "clasp-from-fresh" --type standalone
+
+            echo "Resulting .clasp.json:"
+            cat .clasp.json
+          else
+            echo ".clasp.json already has a scriptId – skipping create."
+          fi
+
+      # Commit the generated/updated .clasp.json back to the repo (first run)
+      - name: Commit .clasp.json with scriptId
+        run: |
+          if git status --porcelain .clasp.json | grep -q .; then
+            echo "Committing updated .clasp.json back to the repo..."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .clasp.json
+            git commit -m "Add/Update .clasp.json scriptId [skip ci]" || echo "Nothing to commit"
+            git push
+          else
+            echo "No changes to .clasp.json – nothing to commit."
+          fi
 
       - name: Deploy Apps Script project
         run: clasp push -f
