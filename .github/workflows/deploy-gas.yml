@@ -14,6 +14,7 @@ jobs:
         project:
           - apps-script/gas-main-app
           - apps-script/gas-second-app
+          - apps-script/gas-cat-cafe
 
     steps:
       - name: Checkout repo
