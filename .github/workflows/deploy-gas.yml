@@ -38,8 +38,8 @@ jobs:
           printf '%s\n' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
           chmod 600 "$HOME/.clasprc.json"
 
-      - name: Show clasp authorized user
-        run: clasp show-authorized-user
+      - name: Check clasp login status
+        run: clasp login --status
 
       - name: Deploy ${{ matrix.project }}
         working-directory: ${{ matrix.project }}
