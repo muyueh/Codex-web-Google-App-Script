@@ -12,10 +12,8 @@ function createCatCafeShowcase() {
   sections.forEach(section => {
     const slide = deck.appendSlide(SlidesApp.PredefinedLayout.TITLE_AND_BODY);
     setShapeText(slide, SlidesApp.PlaceholderType.TITLE, section.title);
-    const bodyShape = setShapeText(slide, SlidesApp.PlaceholderType.BODY, section.body.join('\n'));
-    if (bodyShape) {
-      bodyShape.getText().getListStyle().applyListPreset(SlidesApp.ListPreset.BULLET_DISC_CIRCLE_SQUARE);
-    }
+    const bodyText = formatBulletList(section.body);
+    setShapeText(slide, SlidesApp.PlaceholderType.BODY, bodyText);
   });
 
   const slidesToKeep = 3;
@@ -44,6 +42,10 @@ function getCatCafeSections() {
       ]
     }
   ];
+}
+
+function formatBulletList(lines) {
+  return lines.map(line => `• ${line}`).join('\n');
 }
 
 function setShapeText(slide, placeholderType, text) {
