@@ -78,11 +78,27 @@ function createTaipeiCoffeeShopSlides() {
 }
 
 function setShapeText(slide, placeholderType, text) {
-  const placeholder = slide.getPlaceholder(placeholderType);
-  if (!placeholder || placeholder.getPageElementType() !== SlidesApp.PageElementType.SHAPE) {
+  const element = slide.getPlaceholder(placeholderType);
+  if (!element) {
     return null;
   }
-  const shape = placeholder.asShape();
+
+  const elementType = element.getPageElementType();
+  const supportsShapeCasting =
+    elementType === SlidesApp.PageElementType.SHAPE || elementType === SlidesApp.PageElementType.PLACEHOLDER;
+
+  if (!supportsShapeCasting) {
+    return null;
+  }
+
+  let shape;
+  try {
+    shape = element.asShape();
+  } catch (error) {
+    Logger.log('Unable to cast placeholder %s to shape: %s', placeholderType, error);
+    return null;
+  }
+
   shape.getText().setText(text);
   return shape;
 }
