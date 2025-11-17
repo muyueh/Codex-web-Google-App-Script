@@ -8,7 +8,8 @@ This repository hosts multiple Google Apps Script projects managed through [`@go
 .
 ├─ apps-script/
 │  ├─ gas-main-app/      # Script ID linked in .clasp.json (helloWorld + Slides helper)
-│  └─ gas-second-app/    # Script ID linked in .clasp.json (manifest TBD)
+│  ├─ gas-second-app/    # Script ID linked in .clasp.json (manifest TBD)
+│  └─ gas-cat-cafe/      # Script ID linked in .clasp.json (three-page cat café Slides deck)
 ├─ shared/               # Optional shared snippets, docs, or templates
 ├─ package.json          # Contains workspace-level scripts (e.g., deploy)
 ├─ package-lock.json
@@ -28,7 +29,7 @@ Each `apps-script/gas-<slug>/` directory is a self-contained Apps Script workspa
 
 ## Per-project requirements
 
-Every project directory (currently `gas-main-app` and `gas-second-app`) must contain:
+Every project directory (currently `gas-main-app`, `gas-second-app`, and `gas-cat-cafe`) must contain:
 
 1. `.clasp.json` with the correct `scriptId` and `rootDir` set to `"."`.
 2. `appsscript.json` manifest configured for the runtime, time zone, and enabled services required by that project.
