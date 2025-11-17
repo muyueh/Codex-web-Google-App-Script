@@ -162,12 +162,16 @@ For every `apps-script/gas-<slug>` folder you touch:
 
 ## 8. Reference docs
 
+Before writing or refactoring any Apps Script code in this repo, pause and consult at least one of the resources below for relev
+ant patterns, method names, or edge-case guidance. Capture any nuances you rely on in code comments or PR context so reviewer
+s know which source informed the change.
+
 * `clasp` CLI – https://github.com/google/clasp
 * Apps Script manifest schema – https://developers.google.com/apps-script/concepts/manifests
-* Useful script samples:
-  * https://github.com/jc324x/google-apps-script-cheat-sheet
-  * https://github.com/oshliaer/google-apps-script-snippets
-  * https://github.com/googleworkspace/apps-script-samples/tree/master
+* Useful script samples (search these for snippets similar to the requested feature):
+  * https://github.com/jc324x/google-apps-script-cheat-sheet – quick reminders for common GAS APIs.
+  * https://github.com/oshliaer/google-apps-script-snippets – curated recipes for Sheets, Docs, and Slides automation.
+  * https://github.com/googleworkspace/apps-script-samples/tree/master – official, end-to-end sample projects from Google.
 
-Keep documentation handy and avoid inventing APIs—verify against the official sources above.
+Keep documentation handy and avoid inventing APIs—verify against the official sources above before committing code.
 
