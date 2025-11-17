@@ -39,67 +39,64 @@ function createPizzaOrderForm() {
 
   // Order preferences section.
   form.addSectionHeaderItem().setTitle('Order details');
-  form
-    .addMultipleChoiceItem()
+  const orderTypeItem = form.addMultipleChoiceItem();
+  orderTypeItem
     .setTitle('Order type')
-    .setChoices([
-      form.createChoice('Delivery'),
-      form.createChoice('Pick-up'),
-    ])
+    .setChoices(createChoices(orderTypeItem, ['Delivery', 'Pick-up']))
     .showOtherOption(false)
     .setRequired(true);
 
-  form
-    .addMultipleChoiceItem()
+  const pizzaSizeItem = form.addMultipleChoiceItem();
+  pizzaSizeItem
     .setTitle('Pizza size')
-    .setChoices([
-      form.createChoice('Small (10")'),
-      form.createChoice('Medium (12")'),
-      form.createChoice('Large (14")'),
-      form.createChoice('Extra large (16")'),
-    ])
+    .setChoices(
+      createChoices(pizzaSizeItem, [
+        'Small (10")',
+        'Medium (12")',
+        'Large (14")',
+        'Extra large (16")',
+      ])
+    )
     .setRequired(true);
 
-  form
-    .addMultipleChoiceItem()
+  const crustStyleItem = form.addMultipleChoiceItem();
+  crustStyleItem
     .setTitle('Crust style')
-    .setChoices([
-      form.createChoice('Hand tossed'),
-      form.createChoice('Thin crust'),
-      form.createChoice('Deep dish'),
-      form.createChoice('Gluten-free'),
-      form.createChoice('Cauliflower'),
-    ])
+    .setChoices(
+      createChoices(crustStyleItem, [
+        'Hand tossed',
+        'Thin crust',
+        'Deep dish',
+        'Gluten-free',
+        'Cauliflower',
+      ])
+    )
     .setRequired(true);
 
-  form
-    .addCheckboxItem()
+  const toppingsItem = form.addCheckboxItem();
+  toppingsItem
     .setTitle('Toppings (choose all that apply)')
-    .setChoices([
-      form.createChoice('Pepperoni'),
-      form.createChoice('Sausage'),
-      form.createChoice('Ham'),
-      form.createChoice('Bacon'),
-      form.createChoice('Chicken'),
-      form.createChoice('Mushrooms'),
-      form.createChoice('Onions'),
-      form.createChoice('Green peppers'),
-      form.createChoice('Black olives'),
-      form.createChoice('Pineapple'),
-      form.createChoice('Jalapeños'),
-      form.createChoice('Extra cheese'),
-    ]);
+    .setChoices(
+      createChoices(toppingsItem, [
+        'Pepperoni',
+        'Sausage',
+        'Ham',
+        'Bacon',
+        'Chicken',
+        'Mushrooms',
+        'Onions',
+        'Green peppers',
+        'Black olives',
+        'Pineapple',
+        'Jalapeños',
+        'Extra cheese',
+      ])
+    );
 
-  form
-    .addCheckboxItem()
+  const extrasItem = form.addCheckboxItem();
+  extrasItem
     .setTitle('Extras (optional)')
-    .setChoices([
-      form.createChoice('Garlic knots'),
-      form.createChoice('Salad'),
-      form.createChoice('Wings'),
-      form.createChoice('Soda'),
-      form.createChoice('Dessert'),
-    ]);
+    .setChoices(createChoices(extrasItem, ['Garlic knots', 'Salad', 'Wings', 'Soda', 'Dessert']));
 
   form
     .addParagraphTextItem()
@@ -112,14 +109,10 @@ function createPizzaOrderForm() {
     .setTitle('Preferred delivery/pick-up time')
     .setHelpText('We will confirm if this time is available.');
 
-  form
-    .addMultipleChoiceItem()
+  const paymentMethodItem = form.addMultipleChoiceItem();
+  paymentMethodItem
     .setTitle('Payment method')
-    .setChoices([
-      form.createChoice('Pay online'),
-      form.createChoice('Pay on delivery'),
-      form.createChoice('Pay at pick-up'),
-    ])
+    .setChoices(createChoices(paymentMethodItem, ['Pay online', 'Pay on delivery', 'Pay at pick-up']))
     .setRequired(true);
 
   form
@@ -129,4 +122,8 @@ function createPizzaOrderForm() {
 
   Logger.log('Form ready: %s', form.getEditUrl());
   return form.getPublishedUrl();
+}
+
+function createChoices(item, values) {
+  return values.map(value => item.createChoice(value));
 }
