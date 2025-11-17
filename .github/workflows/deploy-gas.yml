@@ -1,4 +1,4 @@
-name: Deploy Google Apps Script (single repo)
+name: Deploy Google Apps Script (matrix)
 
 on:
   push:
@@ -8,6 +8,12 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - apps-script/gas-main-app
+          - apps-script/gas-second-app
 
     steps:
       - name: Checkout repo
@@ -31,5 +37,6 @@ jobs:
       - name: Check clasp login status
         run: clasp login --status
 
-      - name: Deploy Apps Script project
+      - name: Deploy ${{ matrix.project }}
+        working-directory: ${{ matrix.project }}
         run: clasp push -f
