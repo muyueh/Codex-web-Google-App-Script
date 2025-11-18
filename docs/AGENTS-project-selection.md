@@ -106,6 +106,14 @@ apps-script/{project-folder}/
 
 ## 2. 選 Active Project 的標準流程
 
+常見情境有三種：
+
+1. 使用者要改現有專案 → 幫他確認 `.active-project` 與資料夾路徑。
+2. 同時要改多個專案 → 列出完整清單並取得確認。
+3. **使用者說「開一個新的」但沒給 slug → 你必須主動提出候選名稱，不能把責任丟回去。**
+
+下面的子章節分別說明如何處理。
+
 ### 2.1 列出現有專案（在可以開終端機的環境中）
 
 當你第一次進入這個 repo、或使用者說「我要改某個 Apps Script 專案」時：
@@ -147,9 +155,9 @@ find apps-script -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort
 
 ### 2.3 使用者說「我要開一個全新的專案」
 
-當對方明確表示「這次要做一個新的 Apps Script 專案」但還沒給 slug 時：
+當對方明確表示「這次要做一個新的 Apps Script 專案」但還沒給 slug 時，**一定要你來先提案**：
 
-1. **主動提出候選資料夾名稱**：用需求關鍵詞組成 `gas-<kebab-case>`，例如「李慕約簡報」→ `gas-li-mu-yue-slides`。
+1. **主動提出候選資料夾名稱**：用需求關鍵詞組成 `gas-<kebab-case>`，例如「李慕約簡報」→ `gas-li-mu-yue-slides`。不要回覆「請告訴我資料夾路徑」，那代表你沒有履行這個步驟。
 2. 直接在回覆裡附上完整路徑（含 `apps-script/` 與最後的 `/`），並請對方只要回答「確認」或提供替代 slug。
 3. 只有在得到確認後，才把 `.active-project` 切換成新路徑並進入 Onboarding Flow（見 `docs/AGENTS-onboarding-flows.md`）。
 

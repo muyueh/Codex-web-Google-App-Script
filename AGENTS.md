@@ -31,11 +31,12 @@
    - 這個 vendor library 是寫 GAS 程式碼前的強制前置步驟，避免憑空生出 API 或錯誤的 manifest 設定。
 
 3. **任何改動前，一定要先確認 Active Project**
-   - 不可以自己猜，必須請使用者指名專案資料夾，例如：  
-     - `apps-script/gas-main-app/`  
-     - `apps-script/gas-second-app/`  
-   - ⚠️ 專案名稱格式必須是：`apps-script/{project-folder}/`  
+   - 不可以自己猜，必須請使用者指名專案資料夾，例如：
+     - `apps-script/gas-main-app/`
+     - `apps-script/gas-second-app/`
+   - ⚠️ 專案名稱格式必須是：`apps-script/{project-folder}/`
      例如：`apps-script/report-a/`、`apps-script/report-c/`。
+   - 使用者如果只說「我要開一個新的」而沒給 slug，務必主動提出候選名稱（詳見 `docs/AGENTS-project-selection.md` §2.3），不要把決定丟回給對方。
 
 ---
 

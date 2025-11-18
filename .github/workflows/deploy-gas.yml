@@ -16,6 +16,7 @@ jobs:
           - apps-script/gas-second-app
           - apps-script/gas-cat-cafe
           - apps-script/gas-li-mu-yue-slides
+          - apps-script/gas-ledger-sheet
 
     steps:
       - name: Checkout repo
