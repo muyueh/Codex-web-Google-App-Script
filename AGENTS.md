@@ -1,10 +1,22 @@
-# Agents Router – GAS Monorepo
+# AGENTS Router – GAS Monorepo
 
 
 這份檔案只負責兩件事：
 
 1. 告訴你最核心的幾條規則（TL;DR）
 2. 告訴你「遇到什麼情境要去看哪一份 `docs/AGENTS-*.md`」
+
+---
+
+## 如何搭配 `README.md` 使用
+
+`README.md` 解釋這個 monorepo 的檔案結構、命名規範與 CI 行為；`AGENTS.md` 則是你在執行任務時的 Router。常見的流程如下：
+
+1. 先用 `README.md` 理解資料夾與 workflow 的整體架構。
+2. 回到 `AGENTS.md` 決定該情境要開哪一份 `docs/AGENTS-*.md`。
+3. 在專屬文件裡照著 checklist 執行操作並回報結果。
+
+> **重點：** `README.md` 是背景知識，`AGENTS.md` 才是日常執行任務時必須遵守的路線圖。
 
 ---
 
@@ -52,6 +64,21 @@
 
 - **要查 Apps Script API、manifest schema 或 sample 範例**
   - 👉 `docs/AGENTS-reference-gas.md`
+
+---
+
+## 完整文件清單
+
+> `docs/` 資料夾集中存放了所有可用的 AGENTS 指引，之後若新增文件也請補上列表。
+
+- [docs/AGENTS-project-selection.md](docs/AGENTS-project-selection.md)
+- [docs/AGENTS-env-and-clasp-login.md](docs/AGENTS-env-and-clasp-login.md)
+- [docs/AGENTS-ci-secret-clasprc-json.md](docs/AGENTS-ci-secret-clasprc-json.md)
+- [docs/AGENTS-monorepo-structure.md](docs/AGENTS-monorepo-structure.md)
+- [docs/AGENTS-onboarding-flows.md](docs/AGENTS-onboarding-flows.md)
+- [docs/AGENTS-deploy-workflow.md](docs/AGENTS-deploy-workflow.md)
+- [docs/AGENTS-editing-workflow.md](docs/AGENTS-editing-workflow.md)
+- [docs/AGENTS-reference-gas.md](docs/AGENTS-reference-gas.md)
 
 ---
 
