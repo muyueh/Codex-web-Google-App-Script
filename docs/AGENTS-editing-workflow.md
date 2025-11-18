@@ -11,6 +11,18 @@
 
 ---
 
+## 0. 快速檢查清單（依 CI 需求選用）
+
+| PR 變更範圍 | 需要完成的檢查 | 為什麼 |
+| --- | --- | --- |
+| **有動到 `apps-script/` 底下的程式碼或 `appsscript.json`（不含 `.clasp.json`）** | 1. 依照 §4.2.1 執行 Reference Check。<br>2. 在 PR 模板的 `## Reference Check` 章節填入 `keyword-index/*.md` 與 `full-reference/*.md` 檔案，以及官方連結。 | `.github/workflows/reference-check.yml` 會檢查 PR 是否含 Apps Script 程式 / manifest；一旦偵測到就會強制驗證 `Reference Check` 章節。 |
+| **只改 `.clasp.json` 或 Active Project 指標** | 1. 確認使用者提供的 Script ID 正確填入。<br>2. 確認 `deploy-gas.yml` 是否需要同步調整 matrix。 | `.clasp.json` 不會觸發 Reference Check workflow，但錯誤的 Script ID 會導致 deploy job 失敗。 |
+| **只有文件（`README.md`、`AGENTS*.md` 等）或 CI 檔案** | 1. 依照 PR 模板填 `Summary`、`Testing`。<br>2. `Reference Check` 可以標註「N/A（此 PR 沒有修改 Apps Script 程式碼）」即可。 | 不觸及 `apps-script/` 程式時，Reference Check workflow 會自動跳過。 |
+
+> ❗ 把這張表放在文件開頭，是為了讓 AI Agent 可以先依 PR 類型自我檢查，再決定要完成哪些強制步驟；同時也點出相關的 CI workflow 放在哪裡。
+
+---
+
 ## 1. 你可以改哪些東西？
 
 你 **可以** 建立 / 編輯：
@@ -185,7 +197,23 @@ git diff
 
 但真正下 `git commit` / `git push` 的是使用者。
 
-### 4.6 確認 CI 部署結果
+### 4.6 PR 模板一定要填滿（含 Reference Check）
+
+建立 PR 時務必使用 `.github/pull_request_template.md` 裡的三個章節：
+
+1. `## Summary`
+2. `## Testing`
+3. `## Reference Check`
+
+`Reference Check` 章節 **不得留空或刪除**，而且要列出：
+
+- 至少一筆 `keyword-index/*.md` 檔案名稱（例如 `keyword-index/forms/FormApp.md`）。
+- 至少一筆 `full-reference/*.md` 檔案名稱。
+- 參考過的官方文件 URL。
+
+CI 會透過 `actions/github-script` 檢查這三項，如果沒有依樣填寫就會整個 PR 失敗。因此，在寫程式之前依照 `docs/AGENTS-reference-gas.md` 查完資料 → 在 PR 說明中寫下對應的檔案與連結，是 mandatory workflow 的一部分。
+
+### 4.7 確認 CI 部署結果
 
 在 change 被 push 之後，提醒使用者：
 
