@@ -8,7 +8,7 @@
 
 1. 從 `keyword-index/` 搜尋你要用的服務或概念。
 2. 再依照索引跳到 `full-reference/` 的對應表格，確認參數描述與官方 URL。
-3. 檢查 `full-reference/` 裡附的 Google 官方連結是否仍可用。
+3. 根據你的判斷，檢查 `full-reference/` 裡附的 Google 官方連結是否仍可用。
 4. 把你查過的 `keyword-index/*.md` 與 `full-reference/*.md` 檔名、重要段落或對應的官方 URL 在對話中列出，當成「我完成 Reference Check」的證據。
 
 這個參考 library 是寫 GAS 程式碼前的強制步驟，確保下面列出的參考資料永遠和實際程式碼同步，也讓使用者能清楚知道你是依據哪一份文件實作。
@@ -163,9 +163,3 @@ function createSlidesDeckFromTemplate() {
   3. 找不到就不要亂編，直接跟使用者說明限制
 
 * 如果你根據某個文件或範例實作，最好在註解或 PR 說明裡附上來源，方便後續維護。
-
-```
-
----
-
-如果你想，我也可以幫你把這些內容再微調成「更精簡版」或「更偏英文版」，或是幫你補一份 `docs/AGENTS-*.md` 的目錄說明 👍

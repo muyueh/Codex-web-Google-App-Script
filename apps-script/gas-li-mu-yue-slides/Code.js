@@ -33,7 +33,8 @@ function createLiMuYueSlides() {
     setShapeText(slide, SlidesApp.PlaceholderType.TITLE, section.title);
     const bodyShape = setShapeText(slide, SlidesApp.PlaceholderType.BODY, section.bullets.join('\n'));
     if (bodyShape) {
-      bodyShape.getText().getListStyle().applyListPreset(SlidesApp.ListPreset.BULLET_DISC_CIRCLE_SQUARE);
+      // 依 docs/AGENTS-reference-gas.md §7 的檢查流程先確認 Slides ListPreset enum 名稱，再挑選要套用的樣式。
+      bodyShape.getText().getListStyle().applyListPreset(SlidesApp.ListPreset.DISC_CIRCLE_SQUARE);
     }
   });
 
