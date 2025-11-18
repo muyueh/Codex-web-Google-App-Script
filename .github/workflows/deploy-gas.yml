@@ -1,13 +1,15 @@
-name: Deploy Google Apps Script (matrix)
+name: Deploy Google Apps Script (monorepo)
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch: {}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
@@ -34,16 +36,20 @@ jobs:
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
         run: |
-          if [ -z "$CLASPRC_JSON" ]; then
+          if [ -z "${CLASPRC_JSON}" ]; then
             echo "ERROR: GitHub secret CLASPRC_JSON is missing." >&2
             exit 1
           fi
-          printf '%s\n' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
-          chmod 600 "$HOME/.clasprc.json"
+          printf '%s\n' "${CLASPRC_JSON}" > "${HOME}/.clasprc.json"
+          chmod 600 "${HOME}/.clasprc.json"
 
       - name: Check clasp login status
         run: clasp login --status
 
       - name: Deploy ${{ matrix.project }}
+        env:
+          PROJECT_PATH: ${{ matrix.project }}
         working-directory: ${{ matrix.project }}
-        run: clasp push -f
+        run: |
+          echo "Deploying ${PROJECT_PATH}"
+          clasp push -f
