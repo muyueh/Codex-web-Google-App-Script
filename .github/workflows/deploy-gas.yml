@@ -52,4 +52,8 @@ jobs:
         working-directory: ${{ matrix.project }}
         run: |
           echo "Deploying ${PROJECT_PATH}"
+          if [ ! -f ".clasp.json" ]; then
+            echo "::warning::Skipping ${PROJECT_PATH} because .clasp.json is missing. Link this folder to an Apps Script project before deploying."
+            exit 0
+          fi
           clasp push -f
