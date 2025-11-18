@@ -145,6 +145,21 @@ find apps-script -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort
 >
 > 接下來我只會在這個資料夾裡動手。
 
+### 2.3 使用者說「我要開一個全新的專案」
+
+當對方明確表示「這次要做一個新的 Apps Script 專案」但還沒給 slug 時：
+
+1. **主動提出候選資料夾名稱**：用需求關鍵詞組成 `gas-<kebab-case>`，例如「李慕約簡報」→ `gas-li-mu-yue-slides`。
+2. 直接在回覆裡附上完整路徑（含 `apps-script/` 與最後的 `/`），並請對方只要回答「確認」或提供替代 slug。
+3. 只有在得到確認後，才把 `.active-project` 切換成新路徑並進入 Onboarding Flow（見 `docs/AGENTS-onboarding-flows.md`）。
+
+回覆樣板：
+
+> 目前 `.active-project` 是 `apps-script/gas-main-app/`，但你這次要一個新專案。
+> 我先建議用 `apps-script/gas-li-mu-yue-slides/`，這個命名對應李慕約簡報。
+>
+> 如果你同意，我會把 Active Project 切過去並開始建資料夾；若想換別的 slug，也請直接回覆完整路徑。
+
 ---
 
 ## 3. 多專案情境怎麼處理？
@@ -228,6 +243,14 @@ find apps-script -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort
 > 2. 然後更新 `.github/workflows/deploy-gas.yml` 的 `matrix.project`
 >
 > 請回覆「確認」或修正清單。
+
+### 5.4 使用者說「這次要新開一個專案」
+
+> 我會先幫這個主題取一個 slug，例如 `gas-li-mu-yue-slides`，完整路徑是：
+>
+> * `apps-script/gas-li-mu-yue-slides/`
+>
+> 請回覆「確認」或提供你要的 slug。如果確認，我會立刻把 Active Project flag 改成這個新路徑，然後依 `AGENTS-onboarding-flows.md` 指南把新專案連回 Apps Script。
 
 ---
 
