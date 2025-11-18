@@ -13,6 +13,72 @@
 
 ---
 
+## 0. Active Project flag 檔
+
+這個 monorepo 新增了一個 flag 檔來記錄「現在正在處理哪一個專案」。
+
+```
+apps-script/.active-project
+```
+
+規則：
+
+* 內容永遠只有一行、只放 Active Project 的完整路徑，例如：`apps-script/gas-main-app/`。
+* 路徑格式必須符合 `apps-script/{project-folder}/`，並且尾端要保留 `/`。
+* 這個檔案只提供 Agent 用的狀態，不參與 CI。
+
+### 0.1 動手前一定要讀 flag 檔
+
+每次開始任務前都要先確認現在的 flag：
+
+```bash
+cat apps-script/.active-project 2>/dev/null || echo "no-active-project-flag"
+```
+
+讀取結果後依下列情境處理：
+
+1. **沒有 flag 或內容是空的**
+
+   > 現在沒有 Active Project flag。請指定這次要改哪一個專案，例如：`apps-script/gas-main-app/`。
+
+   使用者確認後寫入檔案：
+
+   ```bash
+   printf '%s\n' 'apps-script/gas-main-app/' > apps-script/.active-project
+   ```
+
+2. **有 flag，且資料夾存在**
+
+   > 我目前看到 Active Project flag 是：`apps-script/gas-main-app/`。
+   > 這次要繼續在這個專案上改嗎？
+
+   * 如果使用者回覆「是」或明講「就用這個」，沿用原值。
+   * 如果使用者改指定另一個專案，視為切換（見 0.2 節），覆寫檔案。
+
+3. **有 flag，但資料夾不存在**
+
+   > `.active-project` 記錄的是 `apps-script/gas-old-app/`，但這個資料夾現在不存在了。請重新指定這次要用的專案路徑，例如：`apps-script/gas-main-app/`。
+
+   取得新路徑後覆寫 flag。
+
+### 0.2 切換 Active Project 時要先確認
+
+當使用者描述看起來要換專案時：
+
+1. 先說出目前 flag 內容，例如：
+
+   > 目前 Active Project flag 是：`apps-script/gas-main-app/`。你剛剛提到要改 `apps-script/gas-second-app/`。要不要把 Active Project 切換成 `apps-script/gas-second-app/`？（切換後我後續都只會改 second app）
+
+2. 只有在使用者明確回覆 OK / 確認後，才覆寫檔案：
+
+   ```bash
+   printf '%s\n' 'apps-script/gas-second-app/' > apps-script/.active-project
+   ```
+
+3. 在回覆中說明：
+
+   > 已更新 Active Project flag：`apps-script/.active-project` 現在是 `apps-script/gas-second-app/`。接下來所有修改都只會針對這個專案。
+
 ## 1. Active Project 是什麼？
 
 **Active Project = 使用者目前指定要你動手的 Apps Script 專案資料夾。**
