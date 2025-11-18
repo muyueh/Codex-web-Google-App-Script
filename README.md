@@ -2,6 +2,16 @@
 
 This repository hosts multiple Google Apps Script projects managed through [`@google/clasp`](https://github.com/google/clasp) and deployed via GitHub Actions. Every project lives under `apps-script/` and keeps its own manifest, source files, and `.clasp.json` so the folder can be pushed independently.
 
+## Agent workflow & documentation
+
+Daily contributors should begin with [`AGENTS.md`](AGENTS.md), which acts as a router pointing to the detailed `docs/AGENTS-*.md` guides. The high-level flow is:
+
+1. Read `README.md` to understand the repository layout and CI behavior (this file).
+2. Jump to `AGENTS.md` to identify the scenario-specific checklist you need.
+3. Follow the linked document under `docs/AGENTS-*.md` to execute the task (project selection, onboarding, deploy workflow, etc.).
+
+Keeping `README.md` (concepts) and `AGENTS.md` (execution) in sync ensures every agent shares the same vocabulary when changing the monorepo.
+
 ## Directory layout
 
 ```
