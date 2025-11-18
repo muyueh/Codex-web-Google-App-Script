@@ -1,11 +1,7 @@
 # Ledger Sheet Apps Script
 
-This Apps Script project provisions the `Ledger` worksheet, adds data-validation rules, and exposes helper menu actions via `Code.gs`. The project intentionally **does not** include a `.clasp.json` yet because we still need the real Script ID from you before we can bind the local source to a Apps Script project.
+This Apps Script project provisions the `Ledger` worksheet, adds data-validation rules, and exposes helper menu actions via `Code.gs`. The project is now fully linked to its Apps Script backend via `.clasp.json`, so CI deploys will keep the remote project in sync with this folder.
 
-## Getting the Script ID
-1. Create the Apps Script project in the Apps Script UI (bound to the Google Sheet you want to automate).
-2. Copy its Script ID.
-3. Share that ID in this task so we can create the `.clasp.json` through the onboarding flow described in `docs/AGENTS-onboarding-flows.md`.
-4. After the `.clasp.json` exists, we can re-enable CI deployment for this folder.
+## Script linkage
 
-Until step 3 happens, please do not expect the `.clasp.json` (or CI deploys) to exist—there is nothing to commit yet without the ID.
+The `.clasp.json` stores the production Script ID (`1EHXUf_gYt0PRycN4g0xWM8rG-xyhQkLsw1w5XQR9mMV4z01gVC0yxwb2`). If this ID ever needs to change (for example, when cloning to another Apps Script project), remember to update the `.clasp.json` and coordinate any CI workflow changes using the onboarding flow described in `docs/AGENTS-onboarding-flows.md`.
