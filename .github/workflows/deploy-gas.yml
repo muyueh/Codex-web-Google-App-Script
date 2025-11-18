@@ -23,6 +23,7 @@ jobs:
           - apps-script/gas-cat-cafe
           - apps-script/gas-li-mu-yue-slides
           - apps-script/gas-ledger-sheet
+          - apps-script/gas-deca-option-survey
 
     steps:
       - name: Checkout repo
