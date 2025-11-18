@@ -25,8 +25,9 @@
 1. **這是一個 Google Apps Script monorepo**
    - 每個專案都在 `apps-script/gas-<slug>/` 裡。
 
-2. **在撰寫或修改任何 Apps Script 程式碼之前，一定要先查 `shared/google-apps-script-api-reference/`**
+2. **在撰寫或修改任何 Apps Script 程式碼之前，一定要先查 `shared/google-apps-script-api-reference/`，並在對話中回報你查了哪些索引 / 參考**
    - 先開 `keyword-index/` 找到相關服務與概念，再跳到 `full-reference/` 確認 API／參數與官方連結。
+   - 在正式開始寫程式之前，把你查到的關鍵檔案（例如 `keyword-index/slides.md`、`full-reference/slides.md`）寫進回覆裡，這是強制前置步驟。
    - 這個 vendor library 是寫 GAS 程式碼前的強制前置步驟，避免憑空生出 API 或錯誤的 manifest 設定。
 
 3. **任何改動前，一定要先確認 Active Project**
@@ -68,6 +69,20 @@
 
 - **要查 Apps Script API、manifest schema 或 sample 範例**
   - 👉 `docs/AGENTS-reference-gas.md`（內含查 `shared/google-apps-script-api-reference/` 的流程）
+
+---
+
+## 寫 GAS 之前一定要完成的 Reference Check
+
+> 這個檢查清單是強制的，只要任務包含任何 GAS 程式 / manifest 修改，就要逐條完成並在回覆裡報告結果。
+
+1. **指明這次要用到的服務或概念**（例如 Slides、Sheets、Triggers）。
+2. **打開 `shared/google-apps-script-api-reference/keyword-index/` 找到對應頁面**，並記下檔名。
+3. **跳到 `full-reference/` 的同名頁面確認 API / 參數 / 官方連結**。
+4. **如果要改 manifest，另外查官方 manifest schema**（`docs/AGENTS-reference-gas.md` §2）。
+5. **把你查閱的檔名、段落或官方 URL 寫進回覆裡**，作為「我已經完成 Reference Check」的證明。
+
+沒有完成以上步驟，不可以開始寫任何 GAS 程式碼或 manifest。
 
 ---
 

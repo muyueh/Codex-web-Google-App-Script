@@ -137,6 +137,17 @@
 - 把 Apps Script 程式碼放到 repo root。
 - 在沒有說明的情況下改其他 workflows。
 
+### 4.2.1 Reference Check 是強制步驟
+
+在撰寫或修改任何 GAS 程式碼 / manifest 之前，請先執行 `AGENTS.md` 與 `docs/AGENTS-reference-gas.md` 定義的 Reference Check：
+
+1. 指名這次會觸及的服務或概念（Slides、Sheets、Triggers…）。
+2. 開啟 `shared/google-apps-script-api-reference/keyword-index/` + `full-reference/` 對應檔案，確認 API / 參數 / 官方連結。
+3. 若要修改 manifest，再對照官方 manifest schema。
+4. 在回覆裡列出你查過的檔名、章節與任何官方 URL，證明你完成了這個步驟。
+
+只有在上述內容寫進回覆之後，才可以開始寫實際程式碼或 manifest。
+
 ### 4.3 實際修改程式 / manifest / workflow
 
 依需求：

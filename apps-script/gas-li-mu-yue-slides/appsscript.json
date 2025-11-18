@@ -1,0 +1,10 @@
+{
+  "timeZone": "Asia/Taipei",
+  "dependencies": {},
+  "exceptionLogging": "STACKDRIVER",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/presentations",
+    "https://www.googleapis.com/auth/drive.file"
+  ],
+  "runtimeVersion": "V8"
+}

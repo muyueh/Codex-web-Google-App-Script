@@ -165,6 +165,13 @@ cat "apps-script/$SLUG/.clasp.json"
 
 這條用在：使用者想從零開始一個新的 Apps Script 專案。
 
+> **立刻提醒**：只要使用者說「要新開一個專案」，你就必須同時做到兩件事：
+>
+> 1. 主動提出一個 `gas-<slug>`（參考 `AGENTS-project-selection.md` §2.3），請對方確認或修正。
+> 2. 引導對方到 Apps Script UI 建立新專案並取得 Script ID，接著再回傳給你。
+>
+> 這段提醒要和第一時間的回覆一起送出，避免忘記要 Script ID。
+
 ### 4.1 跟使用者要兩個資訊
 
 1. 在 monorepo 裡的資料夾 slug：`gas-<slug>`
