@@ -6,6 +6,7 @@
     "deploy": "clasp push -f",
     "verify:active-project": "node scripts/verify-active-project.js",
     "verify:deploy-matrix": "node scripts/verify-deploy-matrix.js"
+    "validate:monorepo": "node scripts/validate-monorepo.js"
   },
   "devDependencies": {
     "@google/clasp": "^3.1.0",
