@@ -46,7 +46,7 @@ jobs:
       - name: Check clasp login status
         run: clasp login --status
 
-      - name: Guard: require scriptId before deploy
+      - name: "Guard: require scriptId before deploy"
         working-directory: ${{ matrix.project }}
         env:
           PROJECT: ${{ matrix.project }}
