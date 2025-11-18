@@ -21,6 +21,9 @@ Keeping `README.md` (concepts) and `AGENTS.md` (execution) in sync ensures every
 │  ├─ gas-second-app/    # Script ID linked in .clasp.json (manifest TBD)
 │  └─ gas-cat-cafe/      # Script ID linked in .clasp.json (three-page cat café Slides deck)
 ├─ shared/               # Optional shared snippets, docs, or templates
+├─ vendor/
+│  └─ google-apps-script-api-reference/
+│        # Vendor reference：keyword index + full reference tables for GAS APIs (read before coding)
 ├─ package.json          # Contains workspace-level scripts (e.g., deploy)
 ├─ package-lock.json
 ├─ node_modules/

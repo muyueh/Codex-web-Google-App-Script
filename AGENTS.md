@@ -22,10 +22,14 @@
 
 ## TL;DR：永遠記得這幾件事
 
-1. **這是一個 Google Apps Script monorepo**  
+1. **這是一個 Google Apps Script monorepo**
    - 每個專案都在 `apps-script/gas-<slug>/` 裡。
 
-2. **任何改動前，一定要先確認 Active Project**  
+2. **在撰寫或修改任何 Apps Script 程式碼之前，一定要先查 `vendor/google-apps-script-api-reference/`**
+   - 先開 `keyword-index/` 找到相關服務與概念，再跳到 `full-reference/` 確認 API／參數與官方連結。
+   - 這個 vendor library 是寫 GAS 程式碼前的強制前置步驟，避免憑空生出 API 或錯誤的 manifest 設定。
+
+3. **任何改動前，一定要先確認 Active Project**
    - 不可以自己猜，必須請使用者指名專案資料夾，例如：  
      - `apps-script/gas-main-app/`  
      - `apps-script/gas-second-app/`  
@@ -63,7 +67,7 @@
   - 👉 `docs/AGENTS-editing-workflow.md`
 
 - **要查 Apps Script API、manifest schema 或 sample 範例**
-  - 👉 `docs/AGENTS-reference-gas.md`
+  - 👉 `docs/AGENTS-reference-gas.md`（內含查 `vendor/google-apps-script-api-reference/` 的流程）
 
 ---
 

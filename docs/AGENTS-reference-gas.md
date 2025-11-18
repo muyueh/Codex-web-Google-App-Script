@@ -4,11 +4,19 @@
 
 這份文件是你寫 / 重構 Apps Script 程式碼和 manifest 時的「參考索引」。
 
+在動手寫任何 GAS 之前，**先打開 `vendor/google-apps-script-api-reference/`**：
+
+1. 從 `keyword-index/` 搜尋你要用的服務或概念。
+2. 再依照索引跳到 `full-reference/` 的對應表格，確認參數描述與官方 URL。
+3. 檢查 `full-reference/` 裡附的 Google 官方連結是否仍可用。
+
+這個 vendor library 是寫 GAS 程式碼前的強制步驟，確保下面列出的參考資料永遠和實際程式碼同步。
+
 核心原則：
 
 > **不要亂發明 Apps Script API 或 manifest 欄位。**
 
-如果你不確定某個 API 名稱 / 參數 / manifest 格式，請把下面的官方 / 範例資源當作唯一真實來源。
+如果你不確定某個 API 名稱 / 參數 / manifest 格式，請把 vendor library 和下面的官方 / 範例資源當作唯一真實來源。
 
 ---
 
