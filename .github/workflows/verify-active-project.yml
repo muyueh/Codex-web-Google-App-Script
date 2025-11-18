@@ -5,7 +5,11 @@ on:
   pull_request:
 
 jobs:
+  toolchain-baseline:
+    uses: ./.github/workflows/toolchain-version-guard.yml
+
   verify-flag:
+    needs: toolchain-baseline
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

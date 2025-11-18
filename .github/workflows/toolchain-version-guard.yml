@@ -1,0 +1,79 @@
+name: Toolchain version guard
+
+on:
+  workflow_call: {}
+
+jobs:
+  verify-toolchain:
+    name: Verify Node/npm/clasp versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Node (LTS baseline)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install clasp (3.x)
+        run: npm install -g @google/clasp@^3.1.0
+
+      - name: Capture CLI versions
+        id: capture
+        run: |
+          set -euo pipefail
+          NODE_VERSION=$(node -v)
+          NPM_VERSION=$(npm -v)
+          CLASP_VERSION=$(clasp -v)
+          echo "Detected Node version: ${NODE_VERSION}"
+          echo "Detected npm version: ${NPM_VERSION}"
+          echo "Detected clasp version: ${CLASP_VERSION}"
+          echo "node_version=${NODE_VERSION#v}" >> "$GITHUB_OUTPUT"
+          echo "npm_version=${NPM_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "clasp_version=${CLASP_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Enforce toolchain baselines
+        env:
+          NODE_VERSION: ${{ steps.capture.outputs.node_version }}
+          NPM_VERSION: ${{ steps.capture.outputs.npm_version }}
+          CLASP_VERSION: ${{ steps.capture.outputs.clasp_version }}
+        run: |
+          node <<'NODE'
+          const minNode = '20.0.0';
+          const minClasp = '3.0.0';
+          const versions = {
+            node: process.env.NODE_VERSION || '',
+            npm: process.env.NPM_VERSION || '',
+            clasp: process.env.CLASP_VERSION || '',
+          };
+
+          function compare(left, right) {
+            const a = left.split('.').map(Number);
+            const b = right.split('.').map(Number);
+            for (let i = 0; i < Math.max(a.length, b.length); i++) {
+              const diff = (a[i] || 0) - (b[i] || 0);
+              if (diff !== 0) return diff;
+            }
+            return 0;
+          }
+
+          function fail(message) {
+            console.error(message);
+            process.exit(1);
+          }
+
+          if (!versions.node) {
+            fail('::error title=Node version missing::`node -v` did not return a version. Make sure Node.js is installed before running CI.');
+          }
+          if (!versions.clasp) {
+            fail('::error title=clasp missing::`clasp -v` did not return a version. Install @google/clasp before deploying.');
+          }
+
+          if (compare(versions.node, minNode) < 0) {
+            fail(`::error title=Node too old::Detected Node ${versions.node}, but CI requires >= ${minNode}. Update actions/setup-node or install a newer LTS release.`);
+          }
+
+          if (compare(versions.clasp, minClasp) < 0) {
+            fail(`::error title=clasp too old::Detected clasp ${versions.clasp}, but CI requires >= ${minClasp}. Run \`npm install -g @google/clasp@^3.1.0\` to upgrade.`);
+          }
+
+          console.log(`Node ${versions.node}, npm ${versions.npm}, clasp ${versions.clasp} meet the baseline.`);
+          NODE
