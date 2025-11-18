@@ -1,16 +1,43 @@
-name: Reference Check Validation
+name: PR Reference Check gate
 
 on:
   pull_request:
-    types: [opened, edited, synchronize]
 
 jobs:
-  reference-check:
+  verify-reference-check:
+    name: Enforce Reference Check for GAS changes
     runs-on: ubuntu-latest
     steps:
-      - name: Validate Reference Check section
+      - name: Detect whether PR touches Apps Script projects
+        id: detect
         uses: actions/github-script@v7
         with:
+          github-token: ${{ github.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number,
+              per_page: 100,
+            });
+            const relevantPatterns = [/^apps-script\//];
+            const touchesGas = files.some((file) =>
+              relevantPatterns.some((pattern) => pattern.test(file.filename))
+            );
+            core.setOutput('touches-gas', touchesGas ? 'true' : 'false');
+            if (touchesGas) {
+              core.info('Detected changes to Apps Script sources; Reference Check will be enforced.');
+            } else {
+              core.info('No Apps Script files changed; Reference Check requirement is skipped.');
+            }
+
+      - name: Require Reference Check details in PR body
+        if: steps.detect.outputs.touches-gas == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
           script: |
             const body = (context.payload.pull_request.body || '').trim();
             if (!body) {
