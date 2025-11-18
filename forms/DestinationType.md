@@ -1,5 +1,0 @@
-## DestinationType
-
-### Properties
-
-- SPREADSHEET — Enum

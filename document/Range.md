@@ -1,5 +1,0 @@
-## Range
-
-### Methods
-
-- getRangeElements() — RangeElement[]

@@ -1,5 +1,0 @@
-## CheckboxGridValidationBuilder
-
-### Methods
-
-- requireLimitOneResponsePerColumn() — CheckboxGridValidationBuilder
