@@ -1,0 +1,27 @@
+name: Restore clasp credentials
+
+inputs:
+  clasprc-json:
+    description: Contents of ~/.clasprc.json stored as secrets.CLASPRC_JSON
+    required: true
+
+description: >-
+  Restores ~/.clasprc.json from secrets.CLASPRC_JSON and aborts with guidance when the secret is missing.
+
+runs:
+  using: composite
+  steps:
+    - name: Validate and restore
+      shell: bash
+      env:
+        CLASPRC_JSON: ${{ inputs.clasprc-json }}
+      run: |
+        set -euo pipefail
+        TRIMMED="${CLASPRC_JSON//[[:space:]]/}"
+        if [ -z "${TRIMMED}" ]; then
+          echo "::error title=Missing CLASPRC_JSON::GitHub secret CLASPRC_JSON is missing or empty. See docs/AGENTS-ci-secret-clasprc-json.md for setup instructions." >&2
+          exit 1
+        fi
+        printf '%s\n' "${CLASPRC_JSON}" > "${HOME}/.clasprc.json"
+        chmod 600 "${HOME}/.clasprc.json"
+        echo "Restored clasp credentials to ${HOME}/.clasprc.json using secrets.CLASPRC_JSON (value not shown)."

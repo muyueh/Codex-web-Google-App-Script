@@ -97,24 +97,19 @@
 
 ## 4. CI 裡怎麼使用 `CLASPRC_JSON`
 
-在 `.github/workflows/deploy-gas.yml` 中，通常會有類似這一段：
+在 `.github/workflows/deploy-gas.yml` 中，通常會呼叫這個 composite action：
 
 ```yaml
       - name: Restore clasp credentials from secret
-        env:
-          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
-        run: |
-          if [ -z "$CLASPRC_JSON" ]; then
-            echo "ERROR: GitHub secret CLASPRC_JSON is missing." >&2
-            exit 1
-          fi
-          printf '%s\n' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+        uses: ./.github/actions/restore-clasp-credentials
+        with:
+          clasprc-json: ${{ secrets.CLASPRC_JSON }}
 ```
 
 這段的作用是：
 
 1. 從 `${{ secrets.CLASPRC_JSON }}` 取得 secret 的值
-2. 檢查是不是空的（如果沒設 secret 就會是空值）
+2. 檢查是不是空的（如果沒設 secret 就會是空值），缺少時會印出錯誤訊息並引導你閱讀 `docs/AGENTS-ci-secret-clasprc-json.md`
 3. 把內容原樣寫回 `$HOME/.clasprc.json`
 4. 之後 `clasp login --status` / `clasp push -f` 都會使用這份檔案
 

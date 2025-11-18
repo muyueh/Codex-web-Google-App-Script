@@ -79,14 +79,9 @@ jobs:
         run: npm install -g @google/clasp@^3.1.0
 
       - name: Restore clasp credentials from secret
-        env:
-          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
-        run: |
-          if [ -z "$CLASPRC_JSON" ]; then
-            echo "ERROR: GitHub secret CLASPRC_JSON is missing." >&2
-            exit 1
-          fi
-          printf '%s\n' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+        uses: ./.github/actions/restore-clasp-credentials
+        with:
+          clasprc-json: ${{ secrets.CLASPRC_JSON }}
 
       - name: Check clasp login status
         run: clasp login --status
@@ -130,8 +125,8 @@ GitHub Actions 會針對這些值各跑一次 Job，並在每個專案裡執行 
 
 4. **Restore clasp credentials**
 
-   * 從 `${{ secrets.CLASPRC_JSON }}` 還原 `~/.clasprc.json`。
-   * 如果 secret 缺失，會直接 `exit 1`。
+   * 用 `.github/actions/restore-clasp-credentials` 從 `${{ secrets.CLASPRC_JSON }}` 還原 `~/.clasprc.json`。
+   * 如果 secret 缺失，會直接 `exit 1`，並提示你閱讀 `docs/AGENTS-ci-secret-clasprc-json.md`。
 
 5. **Check clasp login status**
 
