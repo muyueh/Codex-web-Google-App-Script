@@ -1,6 +1,6 @@
 # Agent Instructions
 
-When working anywhere under this vendor reference (`vendor/google-apps-script-api-reference/`):
+When working anywhere under this reference library (`shared/google-apps-script-api-reference/`):
 
 1. **Start with `keyword-index/`.** Use the keyword summaries to locate the service or concept quickly. These files are the primary entry point for understanding the generated reference content.
 2. **Consult `full-reference/` if more detail is required.** Once you identify the relevant keyword entry, jump to the corresponding table in `full-reference/` for the complete parameter descriptions and examples.
