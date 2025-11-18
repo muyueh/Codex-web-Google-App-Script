@@ -192,6 +192,7 @@ cat "$PROJECT_DIR/.clasp.json"
 * `rootDir`：一定要是 `"."`，表示專案的 root 就是這個資料夾。
 
 ⚠️ 不要自己亂改 `scriptId`，除非使用者明確要你「改連到另一個 Script」。
+⚠️ 如果使用者還沒提供 Script ID，就不要寫 `.clasp.json`；請立即回報並等待對方給出正確 ID。
 
 ### 7.2 `appsscript.json` 必須存在而且合法
 

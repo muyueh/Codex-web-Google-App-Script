@@ -74,6 +74,8 @@ strategy:
 
 ## 3. Flow 2 – 用 Script ID 連結既有 Apps Script 專案
 
+> ⚠️ 這個 Flow 的前提是「使用者已經提供 Script ID」。如果資訊缺漏，馬上停下來回覆，並說明你無法建立 `.clasp.json` 或寫任何檔案，直到 Script ID 到手。
+
 這條用在：使用者在 Apps Script UI 裡已有一個專案，想跟這個 repo 接起來。
 
 ### 3.1 跟使用者要兩個資訊
@@ -95,6 +97,8 @@ strategy:
 > 2. 想在 `apps-script/` 底下用的資料夾名稱（slug），格式為 `gas-<slug>`，例如 `gas-taipei-500-form`
 >
 > 我會幫你在 `apps-script/` 建立對應資料夾並用 `clasp` 連結。
+
+> **提醒：** 沒有 Script ID 就不要進行下一步，也不要寫任何 placeholder 值進 `.clasp.json`。
 
 ### 3.2 建新資料夾並進入
 
@@ -171,6 +175,7 @@ cat "apps-script/$SLUG/.clasp.json"
 > 2. 引導對方到 Apps Script UI 建立新專案並取得 Script ID，接著再回傳給你。
 >
 > 這段提醒要和第一時間的回覆一起送出，避免忘記要 Script ID。
+> 另外重申：在 Script ID 到手之前，不可以自己寫 `.clasp.json` 或填任何假 ID。
 
 ### 4.1 跟使用者要兩個資訊
 

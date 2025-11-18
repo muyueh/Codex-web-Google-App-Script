@@ -38,6 +38,10 @@
      例如：`apps-script/report-a/`、`apps-script/report-c/`。
    - 使用者如果只說「我要開一個新的」而沒給 slug，務必主動提出候選名稱（詳見 `docs/AGENTS-project-selection.md` §2.3），不要把決定丟回給對方。
 
+4. **沒有得到使用者提供的 Script ID 之前，禁止建立或修改 `.clasp.json`**
+   - 任何新專案都必須先由使用者給 Script ID，再照 `docs/AGENTS-onboarding-flows.md` Flow 2 / Flow 3 操作。
+   - 不可以自己編造、猜測或填入 placeholder Script ID；遇到缺失就立刻停下來並追要資訊。
+
 ---
 
 ## Router：遇到什麼情境要看哪一份文件？

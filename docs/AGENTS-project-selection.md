@@ -160,6 +160,9 @@ find apps-script -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort
 1. **主動提出候選資料夾名稱**：用需求關鍵詞組成 `gas-<kebab-case>`，例如「李慕約簡報」→ `gas-li-mu-yue-slides`。不要回覆「請告訴我資料夾路徑」，那代表你沒有履行這個步驟。
 2. 直接在回覆裡附上完整路徑（含 `apps-script/` 與最後的 `/`），並請對方只要回答「確認」或提供替代 slug。
 3. 只有在得到確認後，才把 `.active-project` 切換成新路徑並進入 Onboarding Flow（見 `docs/AGENTS-onboarding-flows.md`）。
+4. **在同一則回覆裡提醒對方：後續要建 `.clasp.json` 或開始寫程式之前，必須先把 Apps Script 的 Script ID 貼給你。**
+   - 指出沒有 Script ID 就無法完成 Flow 2 / Flow 3，請他邊確認 slug、邊去 Apps Script UI 建專案並提供 ID。
+   - 強調不能先寫 `.clasp.json` 或填假 ID，缺資料就停下來等使用者。
 
 回覆樣板：
 
@@ -167,6 +170,7 @@ find apps-script -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort
 > 我先建議用 `apps-script/gas-li-mu-yue-slides/`，這個命名對應李慕約簡報。
 >
 > 如果你同意，我會把 Active Project 切過去並開始建資料夾；若想換別的 slug，也請直接回覆完整路徑。
+> 同時請先到 Apps Script UI 建專案並把 Script ID 給我，沒有 Script ID 我不會動 `.clasp.json`。
 
 ---
 
