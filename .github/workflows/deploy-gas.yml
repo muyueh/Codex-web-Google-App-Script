@@ -1,13 +1,15 @@
-name: Deploy Google Apps Script (matrix)
+name: Deploy Google Apps Script (monorepo)
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch: {}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
@@ -34,12 +36,12 @@ jobs:
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
         run: |
-          if [ -z "$CLASPRC_JSON" ]; then
+          if [ -z "${CLASPRC_JSON}" ]; then
             echo "ERROR: GitHub secret CLASPRC_JSON is missing." >&2
             exit 1
           fi
-          printf '%s\n' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
-          chmod 600 "$HOME/.clasprc.json"
+          printf '%s\n' "${CLASPRC_JSON}" > "${HOME}/.clasprc.json"
+          chmod 600 "${HOME}/.clasprc.json"
 
       - name: Check clasp login status
         run: clasp login --status
@@ -59,12 +61,21 @@ jobs:
           const raw = fs.readFileSync(path, 'utf8');
           const data = JSON.parse(raw);
           const scriptId = (data.scriptId || '').trim();
-          if (!scriptId || !scriptId.startsWith('AKfycb')) {
-            console.error(`::error title=Missing Script ID::${process.env.PROJECT} has an empty or placeholder scriptId in ${path}.`);
+          const pattern = /^[A-Za-z0-9_-]{20,}$/;
+          if (!pattern.test(scriptId)) {
+            console.error(`::error title=Missing Script ID::${process.env.PROJECT} has an empty or invalid scriptId in ${path}.`);
             process.exit(1);
           }
           EOF
 
       - name: Deploy ${{ matrix.project }}
+        env:
+          PROJECT_PATH: ${{ matrix.project }}
         working-directory: ${{ matrix.project }}
-        run: clasp push -f
+        run: |
+          echo "Deploying ${PROJECT_PATH}"
+          if [ ! -f ".clasp.json" ]; then
+            echo "::warning::Skipping ${PROJECT_PATH} because .clasp.json is missing. Link this folder to an Apps Script project before deploying."
+            exit 0
+          fi
+          clasp push -f

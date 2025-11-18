@@ -41,7 +41,7 @@
 4. **沒有得到使用者提供的 Script ID 之前，禁止建立或修改 `.clasp.json`，也不要把該資料夾加進 deploy matrix**
    - 任何新專案都必須先由使用者給 Script ID，再照 `docs/AGENTS-onboarding-flows.md` Flow 2 / Flow 3 操作。
    - 不可以自己編造、猜測或填入 placeholder Script ID；遇到缺失就立刻停下來並追要資訊。
-   - `.github/workflows/deploy-gas.yml` 現在會在每次 deploy 前檢查 `.clasp.json` 是否存在且 `scriptId` 以 `AKfycb` 開頭，缺失就會失敗；這個 guard 用來提醒你「未完成 onboarding 的專案不要在 `matrix.project` 裡」。
+   - `.github/workflows/deploy-gas.yml` 現在會在每次 deploy 前檢查 `.clasp.json` 是否存在且 `scriptId` 是非空且符合理論格式，缺失就會失敗；這個 guard 用來提醒你「未完成 onboarding 的專案不要在 `matrix.project` 裡」。
 
 ---
 

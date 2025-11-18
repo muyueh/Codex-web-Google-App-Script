@@ -155,7 +155,7 @@ GitHub Actions 會針對這些值各跑一次 Job，並在每個專案裡執行 
             exit 1
           fi
           node <<'EOF'
-            // …檢查 scriptId 是否存在且以 AKfycb 開頭
+            // …檢查 scriptId 是否存在且符合格式（英數字 + -/_，長度 >= 20）
           EOF
 ```
 
@@ -163,7 +163,7 @@ GitHub Actions 會針對這些值各跑一次 Job，並在每個專案裡執行 
 
 1. `.clasp.json` 不存在
 2. `.clasp.json` 裡沒有 `scriptId`
-3. `scriptId` 不是有效的 Apps Script ID（guard 會檢查是否以 `AKfycb` 開頭）
+3. `scriptId` 不是有效的 Apps Script ID（guard 會檢查是否符合長度與允許字元格式）
 
 **目的：** 防止還沒拿到 Script ID 的新專案被加進 deploy matrix。這種錯誤應該在你寫程式之前就被發現，而不是等 CI 失敗。
 

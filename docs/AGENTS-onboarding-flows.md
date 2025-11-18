@@ -147,7 +147,7 @@ EOF
 
 回到 repo root 之後，直接照 `AGENTS-deploy-workflow.md` 第 3 節的指示更新 `.github/workflows/deploy-gas.yml` 的 `matrix.project`。
 
-> ⚠️ deploy workflow 現在會在 push 前檢查 `.clasp.json` 是否存在並含有以 `AKfycb` 開頭的 Script ID。缺一就整個 job fail。因此只有在 Flow 2 完成、檔案正確後，才可以把專案加進 matrix；否則請等使用者補齊 Script ID。
+> ⚠️ deploy workflow 現在會在 push 前檢查 `.clasp.json` 是否存在並含有符合格式的 Script ID（長度至少 20、僅允許英數字與 `-`、`_`）。缺一就整個 job fail。因此只有在 Flow 2 完成、檔案正確後，才可以把專案加進 matrix；否則請等使用者補齊 Script ID。
 
 更新完 matrix 後，記得向使用者回報。
 
