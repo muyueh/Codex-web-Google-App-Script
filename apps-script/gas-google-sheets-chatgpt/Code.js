@@ -1,10 +1,6 @@
 /******************************************************************************************
- *  OpenAI for Google Sheets — unified text, web‑search, image, vision *and* speech helpers
- *  (v3‑2025‑07‑30 rev‑E)          ← ★ NEW REVISION  –  parallel
- *
- *  ✨  CHANGES IN THIS REVISION (E)
- *  -------------------------------------------------------------------------
- *  • ** parallel**
+ *  OpenAI for Google Sheets — custom functions that call OpenAI for text, search, image,
+ *  vision, and speech, plus a menu action to run them in bulk.
  ******************************************************************************************/
 
 // ────────────────────────────────
@@ -27,7 +23,14 @@ const MENU_ROOT       = 'OpenAI';
 
 let   CACHE_API_KEY;                               // runtime‑only memory cache
 
-/** Retrieve the saved OpenAI API‑Key (lazy prompt, cached for this execution). */
+/**
+ * Retrieve the saved OpenAI API key with a memory cache and lazy UI prompt.
+ *
+ * Uses {@link PropertiesService.getScriptProperties} to load the key, and
+ * falls back to prompting the active spreadsheet UI when missing.
+ *
+ * @returns {string} API key text.
+ */
 function getApiKey_() {
   if (CACHE_API_KEY) return CACHE_API_KEY;                           // ① memory cache
 
@@ -56,7 +59,12 @@ function getApiKey_() {
 // ────────────────────────────────
 // 2.  SHARED HELPERS
 // ────────────────────────────────
-/** Extract *first* assistant text from a /v1/responses body. */
+/**
+ * Extract the first assistant text message from a /v1/responses API body.
+ *
+ * @param {Object} body Parsed JSON response body.
+ * @returns {string} Assistant text (empty string when missing).
+ */
 function extractRespText(body) {
   for (const item of body.output || []) {
     if (item.type !== 'message') continue;
@@ -65,14 +73,26 @@ function extractRespText(body) {
   }
   return '';
 }
-/** Extract URL citations (web_search tool) from a /v1/responses body. */
+/**
+ * Extract URL citations (web_search tool) from a /v1/responses body.
+ *
+ * @param {Object} body Parsed JSON response body.
+ * @returns {string[]} URLs for citations.
+ */
 function extractWebSearchCitations(body) {
   const msg = (body.output || []).find(o => o.type === 'message');
   return (msg?.annotations || [])
            .filter(a => a.type === 'url_citation')
            .map(a => a.url);
 }
-/** Resolve Excel‑style concatenation in custom‑function formulas. */
+/**
+ * Resolve Excel‑style concatenation in custom‑function formulas.
+ *
+ * Supports literal strings and cell references separated by "&".
+ *
+ * @param {string} argStr Raw argument string from the formula.
+ * @returns {string} Resolved text.
+ */
 function resolveConcat(argStr) {
   return argStr.split('&').reduce((acc, piece) => {
     piece = piece.trim();
@@ -85,6 +105,15 @@ function resolveConcat(argStr) {
 // ────────────────────────────────
 // 3.  TEXT ‑ Chat / latest Responses API (gpt‑5.2 default)
 // ────────────────────────────────
+/**
+ * Call the OpenAI Responses API for free-form text generation.
+ *
+ * @param {string} prompt         User prompt.
+ * @param {number} [temperature]  Sampling temperature.
+ * @param {number} [max_tokens]   Max output tokens.
+ * @param {string} [model]        Model identifier.
+ * @returns {string} Assistant reply.
+ */
 function ChatGPT(prompt,
                  temperature = TEMPERATURE,
                  max_tokens  = MAX_TOKENS,
@@ -120,6 +149,16 @@ function ChatGPT(prompt,
 // ────────────────────────────────
 // 4.  WEB SEARCH  (Responses API + tool)
 // ────────────────────────────────
+/**
+ * Call the OpenAI Responses API with the web_search_preview tool enabled.
+ *
+ * @param {string} query                Query text.
+ * @param {'low'|'high'} [contextSize]  Search context size.
+ * @param {number} [temperature]        Sampling temperature.
+ * @param {number} [max_tokens]         Max output tokens.
+ * @param {string} [model]              Model identifier.
+ * @returns {{text: string, cites: string[]}} Answer text plus citation URLs.
+ */
 function WebSearch(query,
                    contextSize = 'high',
                    temperature = TEMPERATURE,
@@ -164,6 +203,14 @@ function WebSearch(query,
 // ────────────────────────────────
 // 5.  IMAGE GENERATION (gpt‑image‑1) — unchanged
 // ────────────────────────────────
+/**
+ * Generate an image with the `gpt-image-1` model.
+ *
+ * @param {string} prompt    Image description.
+ * @param {string} [size]    Output size (e.g., "1024x1024").
+ * @param {string} [quality] Quality level ("low" | "standard" | "high" | "hd").
+ * @returns {{b64_json: string, revised_prompt: string}[]} Image objects.
+ */
 function GPT_IMAGE(prompt, size = '1024x1024', quality = 'high') {
   const payload = {
     model        : 'gpt-image-1',
@@ -186,6 +233,11 @@ function GPT_IMAGE(prompt, size = '1024x1024', quality = 'high') {
   return JSON.parse(res.getContentText()).data; // [{ b64_json, revised_prompt }]
 }
 
+/**
+ * Get or create the dedicated folder for generated images next to the sheet.
+ *
+ * @returns {GoogleAppsScript.Drive.Folder} Folder to store image outputs.
+ */
 function getOrCreateSheetFolder() {
   const ssFile = DriveApp.getFileById(SpreadsheetApp.getActiveSpreadsheet().getId());
   const parent = ssFile.getParents().hasNext() ? ssFile.getParents().next()
@@ -195,7 +247,11 @@ function getOrCreateSheetFolder() {
   return exists.hasNext() ? exists.next() : parent.createFolder(name);
 }
 
-/** Get or create the dedicated folder for speech files. */
+/**
+ * Get or create the dedicated folder for speech files next to the spreadsheet.
+ *
+ * @returns {GoogleAppsScript.Drive.Folder} Folder to store audio outputs.
+ */
 function getOrCreateSpeechFolder() {
   const ssFile = DriveApp.getFileById(SpreadsheetApp.getActiveSpreadsheet().getId());
   const parent = ssFile.getParents().hasNext() ? ssFile.getParents().next()
@@ -208,6 +264,16 @@ function getOrCreateSpeechFolder() {
 // ────────────────────────────────
 // 6.  VISION (GPT‑4o multimodal)  – via Responses API
 // ────────────────────────────────
+/**
+ * Run GPT-4o multimodal analysis on an image URL.
+ *
+ * @param {string} imageUrl     Remote image URL.
+ * @param {string} [prompt]     Vision prompt text.
+ * @param {number} [max_tokens] Maximum tokens to return.
+ * @param {string} [model]      Model identifier (default "gpt-4o").
+ * @param {number} [temperature] Temperature for sampling.
+ * @returns {string} Model response text.
+ */
 function OpenAIVision(imageUrl,
                       prompt      = DEFAULT_VISION_PROMPT,
                       max_tokens  = 300,
@@ -247,6 +313,17 @@ function OpenAIVision(imageUrl,
 // ────────────────────────────────
 // 7.  SPEECH (TTS) — unchanged
 // ────────────────────────────────
+/**
+ * Convert text to speech via OpenAI TTS and store the file in Drive.
+ *
+ * @param {string} text             Text to convert.
+ * @param {string} [voice]          Voice name.
+ * @param {string} [model]          TTS model identifier.
+ * @param {string} [instructions]   Additional style instructions.
+ * @param {string} [responseFormat] Audio format (e.g., "mp3").
+ * @param {string} [filename]       Optional filename stem.
+ * @returns {string} Public download URL for the audio file.
+ */
 function OpenAITTS(text,
                    voice          = DEFAULT_VOICE,
                    model          = DEFAULT_SPEECH_MODEL,
@@ -391,6 +468,10 @@ function gpt_speech(textRef,
 // ────────────────────────────────
 // 9.  UNIVERSAL RUNNER — “Run OpenAI”
 // ────────────────────────────────
+/**
+ * Universal dispatcher that scans the active selection, executes OpenAI calls,
+ * and writes results or queued batches back to the sheet.
+ */
 function runOpenAI() {
   getApiKey_();  // ensure key present
 
@@ -574,10 +655,12 @@ function runOpenAI() {
 // ────────────────────────────────
 // 10.  MENU & BOOTSTRAP
 // ────────────────────────────────
+/** Prompt for API key and rebuild menu; useful for manual initialization. */
 function setup() {
   getApiKey_();  // prompt for key if missing
   onOpen();      // build menu
 }
+/** Add the “Run OpenAI” item under the OpenAI menu on sheet open. */
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu(MENU_ROOT)
@@ -612,6 +695,13 @@ function testRunOpenAI_Speech() {
 /* ────────────────────────────────────────────────
  * 11‑A.  平行批次處理工具
  * ────────────────────────────────────────────────*/
+/**
+ * Process a batch of text-generation requests in parallel via fetchAll.
+ *
+ * @param {Array<{prompt: string, temperature: number, max_tokens: number, model: string, outCell: GoogleAppsScript.Spreadsheet.Range}>} batch
+ *        Batched tasks with output targets.
+ * @returns {number} Number of completed requests.
+ */
 function processTextBatch(batch) {
   if (!batch.length) return 0;
   const requests = batch.map(t => ({
@@ -656,6 +746,13 @@ function processTextBatch(batch) {
   return done;
 }
 
+/**
+ * Process a batch of web-search responses in parallel via fetchAll.
+ *
+ * @param {Array<{query: string, contextSize: string, temperature: number, max_tokens: number, model: string, answerCell: GoogleAppsScript.Spreadsheet.Range, citeCell: GoogleAppsScript.Spreadsheet.Range}>} batch
+ *        Batched search tasks with output targets.
+ * @returns {number} Number of completed requests.
+ */
 function processSearchBatch(batch) {
   if (!batch.length) return 0;
   const requests = batch.map(t => ({
