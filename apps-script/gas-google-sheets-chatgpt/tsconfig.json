@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "lib": ["ES2021"],
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "types": ["google-apps-script"],
+    "noEmitOnError": true,
+    "noImplicitAny": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "removeComments": false
+  },
+  "include": ["Code.ts"]
+}
