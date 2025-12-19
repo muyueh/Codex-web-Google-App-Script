@@ -24,6 +24,7 @@ jobs:
           - apps-script/gas-li-mu-yue-slides
           - apps-script/gas-ledger-sheet
           - apps-script/gas-deca-option-survey
+          - apps-script/gas-google-sheets-chatgpt
 
     steps:
       - name: Checkout repo
