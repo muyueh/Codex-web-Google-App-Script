@@ -144,13 +144,13 @@ function extractWebSearchCitations(body: ResponsesBody): string[] {
  * @returns {string} Resolved text.
  */
 function resolveConcat(argStr: string): string {
-  const sheet = SpreadsheetApp.getActiveSheet();
+  const spreadsheet = SpreadsheetApp.getActive();
   return argStr.split('&').reduce((acc: string, piece: string) => {
     const cleaned = piece.trim();
     return (
       acc +
-      (/^[A-Z]+\d+$/i.test(cleaned)
-        ? String(sheet.getRange(cleaned).getValue())
+      (/^[A-Z]+\d+$/i.test(cleaned) || /^[^!]+![A-Z]+\d+$/i.test(cleaned)
+        ? String(spreadsheet.getRange(cleaned).getValue())
         : cleaned.replace(/"/g, ''))
     );
   }, '');
