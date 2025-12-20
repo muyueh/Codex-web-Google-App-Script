@@ -70,10 +70,29 @@ function extractRespText(body) {
  * @returns {string[]} URLs for citations.
  */
 function extractWebSearchCitations(body) {
-    const msg = (body.output || []).find((o) => o.type === 'message');
-    return (msg?.annotations
-        ?.filter((a) => a.type === 'url_citation' && typeof a.url === 'string')
-        .map((a) => a.url) || []);
+    const urls = [];
+    for (const item of body.output || []) {
+        if (item.type !== 'message')
+            continue;
+        for (const part of item.content || []) {
+            const anns = part.annotations || [];
+            for (const a of anns) {
+                if (a.type === 'url_citation' && typeof a.url === 'string') {
+                    urls.push(a.url);
+                }
+            }
+        }
+    }
+    return urls;
+}
+function unescapeSheetString_(s) {
+    if (!/^".*"$/.test(s))
+        return s;
+    const inner = s.slice(1, -1);
+    return inner.replace(/""/g, '"');
+}
+function isCellReference_(token) {
+    return /^\$?[A-Z]+\$?\d+$/i.test(token) || /^[^!]+!\$?[A-Z]+\$?\d+$/i.test(token);
 }
 /**
  * Resolve Excel‑style concatenation in custom‑function formulas.
@@ -87,11 +106,168 @@ function resolveConcat(argStr) {
     const spreadsheet = SpreadsheetApp.getActive();
     return argStr.split('&').reduce((acc, piece) => {
         const cleaned = piece.trim();
-        return (acc +
-            (/^[A-Z]+\d+$/i.test(cleaned) || /^[^!]+![A-Z]+\d+$/i.test(cleaned)
-                ? String(spreadsheet.getRange(cleaned).getValue())
-                : cleaned.replace(/"/g, '')));
+        if (!cleaned)
+            return acc;
+        if (isCellReference_(cleaned)) {
+            const ref = cleaned.replace(/\$/g, '');
+            return acc + String(spreadsheet.getRange(ref).getValue());
+        }
+        return acc + unescapeSheetString_(cleaned);
     }, '');
+}
+function maxOutputTokensForModel_(model) {
+    const m = (model || '').trim();
+    if (/-chat-latest$/i.test(m))
+        return 16384;
+    if (/^gpt-5-pro$/i.test(m))
+        return 272000;
+    if (/^gpt-5(\.|-)/i.test(m))
+        return 128000;
+    return 8000;
+}
+function normalizeEffort_(model, effortRaw) {
+    const m = (model || '').trim();
+    const effort = (effortRaw || 'none').trim().toLowerCase();
+    const allowed = new Set(['none', 'low', 'medium', 'high', 'xhigh']);
+    if (!allowed.has(effort))
+        throw new Error(`Invalid reasoningEffort: ${effort}`);
+    if (/^gpt-5\.2-pro$/i.test(m) && (effort === 'none' || effort === 'low')) {
+        throw new Error(`Model ${m} does not support reasoningEffort="${effort}". Use medium/high/xhigh.`);
+    }
+    return effort;
+}
+function normalizeVerbosity_(vRaw) {
+    const v = (vRaw || 'medium').trim().toLowerCase();
+    if (!['low', 'medium', 'high'].includes(v))
+        throw new Error(`Invalid verbosity: ${v}`);
+    return v;
+}
+function buildTextPayload_(userPrompt, developerPrompt, model, effort, verbosity) {
+    const input = [];
+    const dev = (developerPrompt || '').trim();
+    const user = (userPrompt || '').trim();
+    if (dev) {
+        input.push({ role: 'developer', content: [{ type: 'input_text', text: dev }] });
+    }
+    input.push({ role: 'user', content: [{ type: 'input_text', text: user }] });
+    const eff = normalizeEffort_(model, effort);
+    const verb = normalizeVerbosity_(verbosity);
+    return {
+        model,
+        input,
+        text: { format: { type: 'text' }, verbosity: verb },
+        reasoning: { effort: eff, summary: 'auto' },
+        max_output_tokens: maxOutputTokensForModel_(model),
+        store: false,
+    };
+}
+function buildWebSearchPayload_(query, model, effort, verbosity, contextSize) {
+    const q = (query || '').trim();
+    const eff = normalizeEffort_(model, effort);
+    const verb = normalizeVerbosity_(verbosity);
+    const ctx = (contextSize || 'high').toLowerCase() === 'low' ? 'low' : 'high';
+    return {
+        model,
+        input: [{ role: 'user', content: [{ type: 'input_text', text: q }] }],
+        text: { format: { type: 'text' }, verbosity: verb },
+        reasoning: { effort: eff, summary: 'auto' },
+        max_output_tokens: maxOutputTokensForModel_(model),
+        store: false,
+        tools: [
+            {
+                type: 'web_search_preview',
+                search_context_size: ctx,
+                user_location: { type: 'approximate', country: 'TW' },
+            },
+        ],
+    };
+}
+function callResponses_(payload) {
+    const options = {
+        method: 'post',
+        contentType: 'application/json',
+        headers: { Authorization: `Bearer ${getApiKey_()}` },
+        muteHttpExceptions: true,
+        payload: JSON.stringify(payload),
+    };
+    const res = UrlFetchApp.fetch('https://api.openai.com/v1/responses', options);
+    const code = res.getResponseCode();
+    const text = res.getContentText();
+    const body = JSON.parse(text);
+    if (code < 200 || code > 299) {
+        const msg = body?.error?.message || text;
+        throw new Error(`OpenAI API error (${code}): ${msg}`);
+    }
+    return body;
+}
+function extractFuncArgs_(formula, funcName) {
+    const needle = `${funcName}(`;
+    const start = formula.indexOf(needle);
+    if (start < 0)
+        return null;
+    let i = start + needle.length;
+    let depth = 1;
+    let inQuotes = false;
+    let args = '';
+    for (; i < formula.length; i++) {
+        const ch = formula[i];
+        if (ch === '"') {
+            if (inQuotes && formula[i + 1] === '"') {
+                args += '""';
+                i++;
+                continue;
+            }
+            inQuotes = !inQuotes;
+            args += ch;
+            continue;
+        }
+        if (!inQuotes) {
+            if (ch === '(')
+                depth++;
+            else if (ch === ')') {
+                depth--;
+                if (depth === 0)
+                    break;
+            }
+        }
+        args += ch;
+    }
+    return args;
+}
+function splitTopLevelArgs_(argStr) {
+    const s = String(argStr || '');
+    const out = [];
+    let cur = '';
+    let depth = 0;
+    let inQuotes = false;
+    for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (ch === '"') {
+            if (inQuotes && s[i + 1] === '"') {
+                cur += '""';
+                i++;
+                continue;
+            }
+            inQuotes = !inQuotes;
+            cur += ch;
+            continue;
+        }
+        if (!inQuotes) {
+            if (ch === '(')
+                depth++;
+            else if (ch === ')')
+                depth = Math.max(0, depth - 1);
+            if (ch === ',' && depth === 0) {
+                out.push(cur.trim());
+                cur = '';
+                continue;
+            }
+        }
+        cur += ch;
+    }
+    if (cur.length || s.trim() !== '')
+        out.push(cur.trim());
+    return out.filter((x) => x !== '');
 }
 // ────────────────────────────────
 // 3.  TEXT ‑ Chat / latest Responses API (gpt‑5.2 default)
@@ -352,7 +528,22 @@ function OpenAITTS(text, voice = DEFAULT_VOICE, model = DEFAULT_SPEECH_MODEL, in
  * @return {string}                     The assistant’s reply.
  * @customfunction
  */
-function gpt_text(promptRef, temperature = TEMPERATURE, max_tokens = MAX_TOKENS, model = MODEL, outputDirection = 'right', parallel = false) {
+function gpt_text_old(promptRef, temperature = TEMPERATURE, max_tokens = MAX_TOKENS, model = MODEL, outputDirection = 'right', parallel = false) {
+    return 'Ready for Run OpenAI';
+}
+/**
+ * New gpt_text v2 with developer prompt, reasoning effort, and verbosity.
+ *
+ * @param {string} userPromptRef          User prompt string or cell reference.
+ * @param {string} [developerRef=""]      Developer message string or cell reference.
+ * @param {string} [model="gpt-5.2"]      Model name (e.g. "gpt-5.2-pro", "gpt-5.2-chat-latest").
+ * @param {string} [reasoningEffort="none"] none | low | medium | high | xhigh.
+ * @param {string} [verbosity="medium"]   low | medium | high.
+ * @param {boolean} [parallel=false]      Queue for parallel execution.
+ * @return {string}                       Placeholder — shows "Ready for Run OpenAI".
+ * @customfunction
+ */
+function gpt_text(userPromptRef, developerRef = '""', model = `"${MODEL}"`, reasoningEffort = '"none"', verbosity = '"medium"', parallel = false) {
     return 'Ready for Run OpenAI';
 }
 /**
@@ -360,15 +551,14 @@ function gpt_text(promptRef, temperature = TEMPERATURE, max_tokens = MAX_TOKENS,
  *
  * @param {string} queryRef                 Query string or cell reference.
  * @param {string} [contextSize="high"]     Search context size ("low"|"high").
- * @param {number} [temperature=1]          Sampling temperature.
- * @param {number} [max_tokens=4000]        Max tokens to return.
  * @param {string} [model="gpt-5.2"]        Model name.
+ * @param {string} [reasoningEffort="none"] none | low | medium | high | xhigh.
+ * @param {string} [verbosity="medium"]     low | medium | high.
  * @param {boolean} [parallel=false]        Queue for parallel execution.
- * @return {string}                         Answer text. Citations go in the
- *                                          next cell to the right.
+ * @return {string}                         Answer text. Citations go in the next cell to the right.
  * @customfunction
  */
-function gpt_search(queryRef, contextSize = 'high', temperature = TEMPERATURE, max_tokens = MAX_TOKENS, model = MODEL, parallel = false) {
+function gpt_search(queryRef, contextSize = 'high', model = `"${MODEL}"`, reasoningEffort = '"none"', verbosity = '"medium"', parallel = false) {
     return 'Ready for Run OpenAI';
 }
 /**
@@ -432,31 +622,41 @@ function runOpenAI() {
     const cols = range.getNumColumns();
     /* 佇列收集 */
     const textTasks = [];
+    const legacyTextTasks = [];
     const searchTasks = [];
     let totalParallel = 0;
     for (let r = 1; r <= rows; r++) {
         for (let c = 1; c <= cols; c++) {
             const cell = range.getCell(r, c);
             const formula = cell.getFormula() || '';
-            /* ---------- GPT_TEXT ---------- */
-            if (formula.includes('gpt_text(')) {
+            /* ---------- GPT_TEXT (legacy) ---------- */
+            if (formula.includes('gpt_text_old(')) {
+                let legacyOutCell = null;
                 try {
-                    const argStr = formula.split('gpt_text(')[1].split(')')[0];
-                    const [promptRaw, tempRaw = TEMPERATURE, tokensRaw = MAX_TOKENS, modelRaw = `"${MODEL}"`, dirRaw = '"right"', parallelRaw = 'false',] = argStr.split(/\s*,\s*/);
+                    const argStr = extractFuncArgs_(formula, 'gpt_text_old') || '';
+                    const args = splitTopLevelArgs_(argStr);
+                    const promptRaw = args[0] || '""';
+                    const tempRaw = args[1] || `${TEMPERATURE}`;
+                    const tokensRaw = args[2] || `${MAX_TOKENS}`;
+                    const modelRaw = args[3] || `"${MODEL}"`;
+                    const dirRaw = args[4] || '"right"';
+                    const parallelRaw = args[5] || 'false';
                     const prompt = resolveConcat(promptRaw);
-                    const temperatureVal = Number(tempRaw);
-                    const maxTokensVal = Number(tokensRaw);
-                    const model = modelRaw.replace(/"/g, '');
-                    const direction = (dirRaw.replace(/"/g, '').toLowerCase() || 'right');
-                    const isParallel = /true|1|parallel/i.test(parallelRaw.replace(/"/g, ''));
+                    const temperatureVal = Number(resolveConcat(String(tempRaw)));
+                    const maxTokensVal = Number(resolveConcat(String(tokensRaw)));
+                    const model = resolveConcat(modelRaw).replace(/"/g, '') || MODEL;
+                    const direction = (resolveConcat(dirRaw).replace(/"/g, '').toLowerCase() ||
+                        'right');
+                    const isParallel = /true|1|parallel/i.test(resolveConcat(parallelRaw).replace(/"/g, ''));
                     const outCell = direction === 'below'
                         ? sheet.getRange(cell.getRow() + 1, cell.getColumn())
                         : sheet.getRange(cell.getRow(), cell.getColumn() + 1);
+                    legacyOutCell = outCell;
                     if (isParallel) {
-                        textTasks.push({
+                        legacyTextTasks.push({
                             prompt,
                             temperature: temperatureVal,
-                            max_tokens: maxTokensVal,
+                            maxTokens: maxTokensVal,
                             model,
                             outCell,
                         });
@@ -468,43 +668,91 @@ function runOpenAI() {
                     }
                 }
                 catch (err) {
-                    SpreadsheetApp.getUi().alert('ChatGPT error: ' + err.message);
+                    legacyOutCell?.setValue(`ERROR: ${err.message}`);
+                }
+                continue;
+            }
+            /* ---------- GPT_TEXT ---------- */
+            if (formula.includes('gpt_text(')) {
+                const outCell = sheet.getRange(cell.getRow(), cell.getColumn() + 1);
+                try {
+                    const argStr = extractFuncArgs_(formula, 'gpt_text') || '';
+                    const args = splitTopLevelArgs_(argStr);
+                    const userRaw = args[0] || '""';
+                    const devRaw = args[1] || '""';
+                    const modelRaw = args[2] || `"${MODEL}"`;
+                    const effRaw = args[3] || '"none"';
+                    const verbRaw = args[4] || '"medium"';
+                    const parallelRaw = args[5] || 'false';
+                    const userPrompt = resolveConcat(userRaw);
+                    const developerPrompt = resolveConcat(devRaw);
+                    const model = resolveConcat(modelRaw).replace(/"/g, '') || MODEL;
+                    const reasoningEffort = resolveConcat(effRaw).replace(/"/g, '') || 'none';
+                    const verbosity = resolveConcat(verbRaw).replace(/"/g, '') || 'medium';
+                    const isParallel = /true|1|parallel/i.test(resolveConcat(parallelRaw).replace(/"/g, ''));
+                    if (isParallel) {
+                        textTasks.push({
+                            userPrompt,
+                            developerPrompt,
+                            model,
+                            reasoningEffort,
+                            verbosity,
+                            outCell,
+                        });
+                        totalParallel++;
+                    }
+                    else {
+                        const payload = buildTextPayload_(userPrompt, developerPrompt, model, reasoningEffort, verbosity);
+                        const body = callResponses_(payload);
+                        outCell.setValue(extractRespText(body));
+                    }
+                }
+                catch (err) {
+                    outCell.setValue(`ERROR: ${err.message}`);
                 }
                 continue;
             }
             /* ---------- GPT_SEARCH ---------- */
             if (formula.includes('gpt_search(')) {
+                const answerCell = sheet.getRange(cell.getRow(), cell.getColumn() + 1);
+                const citeCell = sheet.getRange(cell.getRow(), cell.getColumn() + 2);
                 try {
-                    const argStr = formula.split('gpt_search(')[1].split(')')[0];
-                    const [queryRaw, ctxtRaw = '"high"', tempRaw = TEMPERATURE, tokensRaw = MAX_TOKENS, modelRaw = `"${MODEL}"`, parallelRaw = 'false',] = argStr.split(/\s*,\s*/);
+                    const argStr = extractFuncArgs_(formula, 'gpt_search') || '';
+                    const args = splitTopLevelArgs_(argStr);
+                    const queryRaw = args[0] || '""';
+                    const ctxtRaw = args[1] || '"high"';
+                    const modelRaw = args[2] || `"${MODEL}"`;
+                    const effRaw = args[3] || '"none"';
+                    const verbRaw = args[4] || '"medium"';
+                    const parallelRaw = args[5] || 'false';
                     const query = resolveConcat(queryRaw);
-                    const contextSize = ctxtRaw.replace(/"/g, '') || 'high';
-                    const temperatureVal = Number(tempRaw);
-                    const maxTokensVal = Number(tokensRaw);
-                    const model = modelRaw.replace(/"/g, '');
-                    const isParallel = /true|1|parallel/i.test(parallelRaw.replace(/"/g, ''));
-                    const answerCell = sheet.getRange(cell.getRow(), cell.getColumn() + 1);
-                    const citeCell = sheet.getRange(cell.getRow(), cell.getColumn() + 2);
+                    const contextSize = resolveConcat(ctxtRaw).replace(/"/g, '') || 'high';
+                    const model = resolveConcat(modelRaw).replace(/"/g, '') || MODEL;
+                    const reasoningEffort = resolveConcat(effRaw).replace(/"/g, '') || 'none';
+                    const verbosity = resolveConcat(verbRaw).replace(/"/g, '') || 'medium';
+                    const isParallel = /true|1|parallel/i.test(resolveConcat(parallelRaw).replace(/"/g, ''));
                     if (isParallel) {
                         searchTasks.push({
                             query,
                             contextSize,
-                            temperature: temperatureVal,
-                            max_tokens: maxTokensVal,
                             model,
+                            reasoningEffort,
+                            verbosity,
                             answerCell,
                             citeCell,
                         });
                         totalParallel++;
                     }
                     else {
-                        const { text: answer, cites } = WebSearch(query, contextSize === 'low' ? 'low' : 'high', temperatureVal, maxTokensVal, model);
-                        answerCell.setValue(answer);
-                        citeCell.setValue(cites.join(', '));
+                        const payload = buildWebSearchPayload_(query, model, reasoningEffort, verbosity, contextSize);
+                        const body = callResponses_(payload);
+                        answerCell.setValue(extractRespText(body));
+                        citeCell.setValue(extractWebSearchCitations(body).join(', '));
                     }
                 }
                 catch (err) {
-                    SpreadsheetApp.getUi().alert('Web Search error: ' + err.message);
+                    answerCell.setValue(`ERROR: ${err.message}`);
+                    citeCell.setValue('');
                 }
                 continue;
             }
@@ -585,6 +833,10 @@ function runOpenAI() {
         processed += processTextBatch(textTasks.slice(i, i + PARALLEL_BATCH_SIZE));
         ss.toast(`Processed ${processed}/${total} requests…`, 'OpenAI Batch', 5);
     }
+    for (let i = 0; i < legacyTextTasks.length; i += PARALLEL_BATCH_SIZE) {
+        processed += processLegacyTextBatch(legacyTextTasks.slice(i, i + PARALLEL_BATCH_SIZE));
+        ss.toast(`Processed ${processed}/${total} requests…`, 'OpenAI Batch', 5);
+    }
     for (let i = 0; i < searchTasks.length; i += PARALLEL_BATCH_SIZE) {
         processed += processSearchBatch(searchTasks.slice(i, i + PARALLEL_BATCH_SIZE));
         ss.toast(`Processed ${processed}/${total} requests…`, 'OpenAI Batch', 5);
@@ -627,14 +879,7 @@ function testRunOpenAI_Speech() {
 /* ────────────────────────────────────────────────
  * 11‑A.  平行批次處理工具
  * ────────────────────────────────────────────────*/
-/**
- * Process a batch of text-generation requests in parallel via fetchAll.
- *
- * @param {Array<{prompt: string, temperature: number, max_tokens: number, model: string, outCell: GoogleAppsScript.Spreadsheet.Range}>} batch
- *        Batched tasks with output targets.
- * @returns {number} Number of completed requests.
- */
-function processTextBatch(batch) {
+function processLegacyTextBatch(batch) {
     if (!batch.length)
         return 0;
     const requests = batch.map((t) => ({
@@ -652,9 +897,53 @@ function processTextBatch(batch) {
                 },
             ],
             temperature: t.temperature,
-            max_output_tokens: t.max_tokens,
+            max_output_tokens: t.maxTokens,
             text: { format: { type: 'text' } },
         }),
+    }));
+    const responses = UrlFetchApp.fetchAll(requests);
+    let done = 0;
+    responses.forEach((res, i) => {
+        let answer = '';
+        if (res.getResponseCode() >= 200 && res.getResponseCode() < 300) {
+            answer = extractRespText(JSON.parse(res.getContentText()));
+        }
+        else {
+            try {
+                const retry = UrlFetchApp.fetch(requests[i].url, requests[i]);
+                if (retry.getResponseCode() >= 200 && retry.getResponseCode() < 300) {
+                    answer = extractRespText(JSON.parse(retry.getContentText()));
+                }
+                else {
+                    answer = `ERROR ${retry.getResponseCode()}`;
+                }
+            }
+            catch (e) {
+                answer = 'ERROR';
+            }
+        }
+        batch[i].outCell.setValue(answer);
+        done++;
+    });
+    return done;
+}
+/**
+ * Process a batch of text-generation requests in parallel via fetchAll.
+ *
+ * @param {Array<{userPrompt: string, developerPrompt: string, reasoningEffort: string, verbosity: string, model: string, outCell: GoogleAppsScript.Spreadsheet.Range}>} batch
+ *        Batched tasks with output targets.
+ * @returns {number} Number of completed requests.
+ */
+function processTextBatch(batch) {
+    if (!batch.length)
+        return 0;
+    const requests = batch.map((t) => ({
+        url: 'https://api.openai.com/v1/responses',
+        method: 'post',
+        contentType: 'application/json',
+        headers: { Authorization: `Bearer ${getApiKey_()}` },
+        muteHttpExceptions: true,
+        payload: JSON.stringify(buildTextPayload_(t.userPrompt, t.developerPrompt, t.model, t.reasoningEffort, t.verbosity)),
     }));
     const responses = UrlFetchApp.fetchAll(requests);
     let done = 0;
@@ -686,7 +975,7 @@ function processTextBatch(batch) {
 /**
  * Process a batch of web-search responses in parallel via fetchAll.
  *
- * @param {Array<{query: string, contextSize: string, temperature: number, max_tokens: number, model: string, answerCell: GoogleAppsScript.Spreadsheet.Range, citeCell: GoogleAppsScript.Spreadsheet.Range}>} batch
+ * @param {Array<{query: string, contextSize: string, reasoningEffort: string, verbosity: string, model: string, answerCell: GoogleAppsScript.Spreadsheet.Range, citeCell: GoogleAppsScript.Spreadsheet.Range}>} batch
  *        Batched search tasks with output targets.
  * @returns {number} Number of completed requests.
  */
@@ -699,25 +988,7 @@ function processSearchBatch(batch) {
         contentType: 'application/json',
         headers: { Authorization: `Bearer ${getApiKey_()}` },
         muteHttpExceptions: true,
-        payload: JSON.stringify({
-            model: t.model,
-            input: [
-                {
-                    role: 'user',
-                    content: [{ type: 'input_text', text: t.query }],
-                },
-            ],
-            temperature: t.temperature,
-            max_output_tokens: t.max_tokens,
-            text: { format: { type: 'text' } },
-            tools: [
-                {
-                    type: 'web_search_preview',
-                    search_context_size: t.contextSize,
-                    user_location: { type: 'approximate', country: 'TW' },
-                },
-            ],
-        }),
+        payload: JSON.stringify(buildWebSearchPayload_(t.query, t.model, t.reasoningEffort, t.verbosity, t.contextSize)),
     }));
     const responses = UrlFetchApp.fetchAll(requests);
     let done = 0;
