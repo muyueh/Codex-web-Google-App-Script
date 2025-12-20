@@ -161,6 +161,13 @@ function isCellReference_(token: string): boolean {
   return /^\$?[A-Z]+\$?\d+$/i.test(token) || /^[^!]+!\$?[A-Z]+\$?\d+$/i.test(token);
 }
 
+function isNumericString_(s: string): boolean {
+  if (s === null || s === undefined) return false;
+  const trimmed = s.trim();
+  if (!trimmed) return false;
+  return !isNaN(Number(trimmed));
+}
+
 /**
  * Resolve Excel‑style concatenation in custom‑function formulas.
  *
@@ -858,44 +865,82 @@ function runOpenAI(): void {
 
       /* ---------- GPT_TEXT ---------- */
       if (formula.includes('gpt_text(')) {
-        const outCell = sheet.getRange(cell.getRow(), cell.getColumn() + 1);
+        const fallbackOutCell = sheet.getRange(cell.getRow(), cell.getColumn() + 1);
         try {
           const argStr = extractFuncArgs_(formula, 'gpt_text') || '';
           const args = splitTopLevelArgs_(argStr);
 
-          const userRaw = args[0] || '""';
-          const devRaw = args[1] || '""';
-          const modelRaw = args[2] || `"${MODEL}"`;
-          const effRaw = args[3] || '"none"';
-          const verbRaw = args[4] || '"medium"';
-          const parallelRaw = args[5] || 'false';
+          /* detect legacy signature: gpt_text(prompt, temperature, max_tokens, model, dir, parallel) */
+          const tempCandidate = resolveConcat(args[1] || '').replace(/"/g, '');
+          const tokensCandidate = resolveConcat(args[2] || '').replace(/"/g, '');
+          const looksLegacy = isNumericString_(tempCandidate) && isNumericString_(tokensCandidate);
 
-          const userPrompt = resolveConcat(userRaw);
-          const developerPrompt = resolveConcat(devRaw);
-          const model = resolveConcat(modelRaw).replace(/"/g, '') || MODEL;
-          const reasoningEffort = resolveConcat(effRaw).replace(/"/g, '') || 'none';
-          const verbosity = resolveConcat(verbRaw).replace(/"/g, '') || 'medium';
-          const isParallel = /true|1|parallel/i.test(
-            resolveConcat(parallelRaw).replace(/"/g, '')
-          );
+          if (looksLegacy) {
+            const prompt = resolveConcat(args[0] || '""');
+            const temperatureVal = Number(tempCandidate);
+            const maxTokensVal = Number(tokensCandidate);
+            const model = resolveConcat(args[3] || `"${MODEL}"`).replace(/"/g, '') || MODEL;
+            const dirRaw = args[4] || '"right"';
+            const direction = (resolveConcat(dirRaw).replace(/"/g, '').toLowerCase() ||
+              'right') as 'right' | 'below';
+            const isParallel = /true|1|parallel/i.test(
+              resolveConcat(args[5] || 'false').replace(/"/g, '')
+            );
 
-          if (isParallel) {
-            textTasks.push({
-              userPrompt,
-              developerPrompt,
-              model,
-              reasoningEffort,
-              verbosity,
-              outCell,
-            });
-            totalParallel++;
+            const outCell =
+              direction === 'below'
+                ? sheet.getRange(cell.getRow() + 1, cell.getColumn())
+                : sheet.getRange(cell.getRow(), cell.getColumn() + 1);
+
+            if (isParallel) {
+              legacyTextTasks.push({
+                prompt,
+                temperature: temperatureVal,
+                maxTokens: maxTokensVal,
+                model,
+                outCell,
+              });
+              totalParallel++;
+            } else {
+              const answer = ChatGPT(prompt, temperatureVal, maxTokensVal, model);
+              outCell.setValue(answer);
+            }
           } else {
-            const payload = buildTextPayload_(userPrompt, developerPrompt, model, reasoningEffort, verbosity);
-            const body = callResponses_(payload);
-            outCell.setValue(extractRespText(body));
+            const userRaw = args[0] || '""';
+            const devRaw = args[1] || '""';
+            const modelRaw = args[2] || `"${MODEL}"`;
+            const effRaw = args[3] || '"none"';
+            const verbRaw = args[4] || '"medium"';
+            const parallelRaw = args[5] || 'false';
+
+            const userPrompt = resolveConcat(userRaw);
+            const developerPrompt = resolveConcat(devRaw);
+            const model = resolveConcat(modelRaw).replace(/"/g, '') || MODEL;
+            const reasoningEffort = resolveConcat(effRaw).replace(/"/g, '') || 'none';
+            const verbosity = resolveConcat(verbRaw).replace(/"/g, '') || 'medium';
+            const isParallel = /true|1|parallel/i.test(
+              resolveConcat(parallelRaw).replace(/"/g, '')
+            );
+
+            const outCell = sheet.getRange(cell.getRow(), cell.getColumn() + 1);
+            if (isParallel) {
+              textTasks.push({
+                userPrompt,
+                developerPrompt,
+                model,
+                reasoningEffort,
+                verbosity,
+                outCell,
+              });
+              totalParallel++;
+            } else {
+              const payload = buildTextPayload_(userPrompt, developerPrompt, model, reasoningEffort, verbosity);
+              const body = callResponses_(payload);
+              outCell.setValue(extractRespText(body));
+            }
           }
         } catch (err) {
-          outCell.setValue(`ERROR: ${(err as Error).message}`);
+          fallbackOutCell.setValue(`ERROR: ${(err as Error).message}`);
         }
         continue;
       }
